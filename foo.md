@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.7
+    jupytext_version: 1.15.2
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -69,9 +69,7 @@ In this case, it is simple to setup; only the number of components needs to be s
 ```{code-cell}
 :tags: [solution]
 
-from CADETProcess.processModel import ComponentSystem
 
-component_system = ComponentSystem(1)
 ```
 
 Alternatively, pass a list of strings for the component names in the constructor:
@@ -79,7 +77,7 @@ Alternatively, pass a list of strings for the component names in the constructor
 ```{code-cell}
 :tags: [solution]
 
-component_system = ComponentSystem(['A'])
+
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
@@ -106,10 +104,7 @@ Since the flow rate is constant, we can directly set the parameter on the object
 ```{code-cell}
 :tags: [solution]
 
-from CADETProcess.processModel import Inlet
 
-inlet = Inlet(component_system, 'inlet')
-inlet.flow_rate = 1e-6
 ```
 
 Note that every unit operation model has different model parameters.
@@ -118,7 +113,7 @@ To display all parameters, simply print the `parameters` attribute.
 ```{code-cell}
 :tags: [solution]
 
-print(inlet.parameters)
+
 ```
 
 +++ {"slideshow": {"slide_type": "fragment"}}
@@ -129,9 +124,7 @@ The `Outlet` is another pseudo unit operation that serves as sink for the system
 ```{code-cell}
 :tags: [solution]
 
-from CADETProcess.processModel import Outlet
 
-outlet = Outlet(component_system, 'outlet')
 ```
 
 +++ {"slideshow": {"slide_type": "fragment"}}
@@ -151,14 +144,7 @@ To represent the flow between different unit operations, a `FlowSheet` object is
 ```{code-cell}
 :tags: [solution]
 
-from CADETProcess.processModel import FlowSheet
 
-flow_sheet = FlowSheet(component_system)
-
-flow_sheet.add_unit(inlet)
-flow_sheet.add_unit(outlet)
-
-flow_sheet.add_connection(inlet, outlet)
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
@@ -174,10 +160,7 @@ For more information, see also [here](https://cadet.github.io/master/modelling/u
 ```{code-cell}
 :tags: [solution]
 
-from CADETProcess.processModel import Process
 
-process = Process(flow_sheet, 'process')
-process.cycle_time = 120
 ```
 
 +++ {"slideshow": {"slide_type": "skip"}}
@@ -193,7 +176,7 @@ To display all time dependent parameters of an object, use the `section_dependen
 ```{code-cell}
 :tags: [solution]
 
-print(inlet.section_dependent_parameters)
+
 ```
 
 +++ {"slideshow": {"slide_type": "notes"}}
@@ -207,8 +190,7 @@ print(process.flow_sheet.section_dependent_parameters)
 ```{code-cell}
 :tags: [solution]
 
-_ = process.add_event('start load', 'flow_sheet.inlet.c', [1], 0)
-_ = process.add_event('start wash', 'flow_sheet.inlet.c', [0], 60)
+
 ```
 
 All events can are stored in the events attribute. To visualize the trajectory of the parameter state over the entire cycle, the Process provides a `plot_events()` method.
@@ -216,7 +198,7 @@ All events can are stored in the events attribute. To visualize the trajectory o
 ```{code-cell}
 :tags: [solution]
 
-_ = process.plot_events()
+
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
@@ -229,8 +211,7 @@ If no path is specified, CADET-Process will try to autodetect CADET.
 ```{code-cell}
 :tags: [solution]
 
-from CADETProcess.simulator import Cadet
-process_simulator = Cadet()
+
 ```
 
 +++ {"slideshow": {"slide_type": "fragment"}}
@@ -246,7 +227,7 @@ To check that everything works correctly, you can call the check_cadet method:
 ```{code-cell}
 :tags: [solution]
 
-process_simulator.check_cadet()
+
 ```
 
 Now, run the simulation:
@@ -254,7 +235,7 @@ Now, run the simulation:
 ```{code-cell}
 :tags: [solution]
 
-simulation_results = process_simulator.simulate(process)
+
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
@@ -266,6 +247,5 @@ The simulation_results object contains the solution for the inlet and outlet of 
 ```{code-cell}
 :tags: [solution]
 
-_ = simulation_results.solution.inlet.outlet.plot()
-_ = simulation_results.solution.outlet.inlet.plot()
+
 ```
