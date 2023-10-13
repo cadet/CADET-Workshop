@@ -1,5 +1,6 @@
 ---
 jupytext:
+  formats: ipynb,md:myst
   text_representation:
     extension: .md
     format_name: myst
@@ -11,15 +12,15 @@ kernelspec:
   name: python3
 ---
 
-+++ {"slideshow": {"slide_type": ""}, "editable": true}
++++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 # CADET Overview
 
-```{figure} ./resources/cadet_overview.png
+```{figure} ./resources/cadet_horizontal.png
 :width: 75%
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}, "editable": true}
++++ {"editable": true, "slideshow": {"slide_type": "slide"}}
 
 ## Unit Operation Model
 
@@ -29,7 +30,7 @@ kernelspec:
 
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}, "jp-MarkdownHeadingCollapsed": true, "editable": true}
++++ {"editable": true, "jp-MarkdownHeadingCollapsed": true, "slideshow": {"slide_type": "slide"}}
 
 ## Flow Sheet Model
 
@@ -39,7 +40,7 @@ kernelspec:
 
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}, "jp-MarkdownHeadingCollapsed": true, "editable": true}
++++ {"editable": true, "jp-MarkdownHeadingCollapsed": true, "slideshow": {"slide_type": "slide"}}
 
 ## Process Model
 
@@ -49,7 +50,7 @@ kernelspec:
 
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}, "editable": true}
++++ {"editable": true, "slideshow": {"slide_type": "slide"}}
 
 ## Simulation
 
@@ -58,7 +59,7 @@ kernelspec:
 :width: 50%
 ```
 
-+++ {"slideshow": {"slide_type": "fragment"}, "editable": true}
++++ {"editable": true, "slideshow": {"slide_type": "fragment"}}
 
 ```{figure} ./resources/simulation_results.png
 :align: center
@@ -81,7 +82,7 @@ kernelspec:
 :width: 33%
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}, "jp-MarkdownHeadingCollapsed": true}
++++ {"jp-MarkdownHeadingCollapsed": true, "slideshow": {"slide_type": "slide"}}
 
 ## Post Processing
 
