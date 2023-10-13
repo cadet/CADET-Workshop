@@ -1,0 +1,17 @@
+name: cadet_workshop
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - gitpython
+  - jupyterlab
+  - jupyter
+  - jupytext
+  - pre-commit
+  - cadet
+  - pip
+  - pip:
+    - cadet-process
+    - nbtoolbelt
+    - jupyterlab_myst
+    - jupyterlab_deck
