@@ -1,4 +1,5 @@
 import argparse
+import os
 import glob
 import subprocess
 import git
@@ -35,7 +36,7 @@ def create_solution(run=False, commit=False, push=False):
     -------
     None
     """
-    repo = git.Repo()
+    repo = git.Repo(search_parent_directories=True)
     current_branch = repo.active_branch.name
     repo_root = repo.working_tree_dir  # Gets the root directory of the repo
 
@@ -48,7 +49,7 @@ def create_solution(run=False, commit=False, push=False):
         run_command("git stash")
 
         # Checkout the 'solution' branch
-        repo.heads.solution.checkout()
+        repo.git.checkout("solution")
 
         # Reset to `dev`
         run_command("git reset --hard dev")
@@ -58,8 +59,8 @@ def create_solution(run=False, commit=False, push=False):
 
         # Run jupytext for each myst file
         for myst_file in myst_files:
-            run_command(f"jupytext --to ipynb {myst_file}")
-            run_command(f"rm {myst_file}")
+            run_command(f"jupytext --to ipynb '{myst_file}'")
+            os.remove(myst_file)
 
         # Find all ipynb files recursively using Python's glob module
         ipynb_files = glob.glob(f"{repo_root}/**/*.ipynb", recursive=True)
@@ -80,7 +81,7 @@ def create_solution(run=False, commit=False, push=False):
             run_command("git push --force-with-lease --set-upstream origin solution")
 
         # Switch back to dev
-        repo.heads.dev.checkout()
+        repo.git.checkout("dev")
 
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -88,7 +89,7 @@ def create_solution(run=False, commit=False, push=False):
         run_command("git restore .")
 
         # Revert the last commit on dev
-        repo.heads.dev.checkout()
+        repo.git.checkout("dev")
         run_command("git reset --soft HEAD~1")
 
         raise
@@ -114,7 +115,7 @@ def create_teaching(commit=False, push=False):
     -------
     None
     """
-    repo = git.Repo()
+    repo = git.Repo(search_parent_directories=True)
     current_branch = repo.active_branch.name
     repo_root = repo.working_tree_dir  # Gets the root directory of the repo
 
@@ -127,7 +128,7 @@ def create_teaching(commit=False, push=False):
         run_command("git stash")
 
         # Checkout the 'teaching' branch
-        repo.heads.teaching.checkout()
+        repo.git.checkout("teaching")
 
         # Reset to `dev`
         run_command("git reset --hard dev")
@@ -161,7 +162,7 @@ def create_teaching(commit=False, push=False):
 
         # Clean up
         for ipynb_file in ipynb_files:
-            run_command(f"rm {ipynb_file}")
+            os.remove(ipynb_file)
 
     except Exception as e:
         print(f"An error occurred: {e}")
