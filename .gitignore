@@ -7,3 +7,4 @@ log/
 diskcache_*
 results_*
 *.egg-info
+.idea
