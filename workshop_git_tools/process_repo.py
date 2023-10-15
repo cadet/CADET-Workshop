@@ -4,6 +4,8 @@ from pathlib import Path
 import subprocess
 import git
 
+from joblib import Parallel, delayed
+
 
 def run_command(command):
     """Run a shell command and return its output.
@@ -61,7 +63,7 @@ def create_solution(run=False, commit=False, push=False):
         for myst_file in myst_files:
             if "README" in myst_file.as_posix():
                 continue
-            run_command(f"jupytext --to ipynb '{myst_file.as_posix()}'")
+            run_command(f'jupytext --to ipynb "{myst_file.as_posix()}"')
             os.remove(myst_file)
 
         # Find all ipynb files recursively
@@ -70,7 +72,8 @@ def create_solution(run=False, commit=False, push=False):
         # Run nbtb run for each ipynb file
         if run:
             for ipynb_file in ipynb_files:
-                run_command(f"nbtb run --config {repo_root}/.nbtoolbelt.json '{ipynb_file.as_posix()}'")
+                print(f"Running notebook {ipynb_file}")
+                run_command(f'nbtb run --config {repo_root}/.nbtoolbelt.json "{ipynb_file.as_posix()}"')
 
         if commit:
             # Commit all changes to ipynb files
@@ -112,7 +115,7 @@ def create_teaching(commit=False, push=False):
     -------
     None
     """
-    repo = git.Repo()
+    repo = git.Repo(search_parent_directories=True)
     current_branch = repo.active_branch.name
     repo_root = Path(repo.working_tree_dir)  # Gets the root directory of the repo
 
@@ -134,23 +137,23 @@ def create_teaching(commit=False, push=False):
         myst_files = list(repo_root.glob("**/*.md"))
 
         # Run jupytext for each myst file
-        for myst_file in myst_files:
-            if "README" in myst_file.as_posix():
-                continue
-            run_command(f"jupytext --to ipynb '{myst_file.as_posix()}'")
+        results = Parallel(n_jobs=1)(
+            delayed(run_jupytext_to_ipynb)(myst_file.as_posix()) for myst_file in myst_files)
 
         # Find all ipynb files recursively
         ipynb_files = list(repo_root.glob("**/*.ipynb"))
 
         # Run nbtb punch for each ipynb file
-        for ipynb_file in ipynb_files:
-            run_command(f"nbtb punch --config {repo_root}/.nbtoolbelt.json '{ipynb_file.as_posix()}'")
-            run_command(f"jupytext --to md:myst '{ipynb_file.as_posix()}'")
+
+        results = Parallel(n_jobs=1)(
+            delayed(punch_notebook)
+            (ipynb_file.as_posix(), f"{repo_root}/.nbtoolbelt.json") for ipynb_file in ipynb_files
+        )
 
         if commit:
             # Commit all changes to myst files (our source of truth)
             repo.index.add(myst_files)
-            run_command("git commit -m 'Update teaching'")
+            run_command('git commit -m "Update teaching"')
 
         if push:
             # Push files to remote
@@ -162,8 +165,8 @@ def create_teaching(commit=False, push=False):
 
     except Exception as e:
         print(f"An error occurred: {e}")
-        run_command("git restore --staged .")
-        run_command("git restore .")
+        # run_command("git restore --staged .")
+        # run_command("git restore .")
 
         raise
 
@@ -173,9 +176,45 @@ def create_teaching(commit=False, push=False):
 
         try:
             repo.git.stash("pop")
-        except git.GitCommandError:
-            pass
+        except git.GitCommandError as e:
+            print(e)
 
+
+def run_jupytext_to_ipynb(myst_file_path):
+    """Run jupytext with --to ipynb flag on myst_file_path. Will skip README files.
+
+    Parameters
+    ----------
+    myst_file_path : str
+        path to myst file as posix.
+
+    Returns
+    -------
+    None
+    """
+    if "README" in myst_file_path:
+        return
+    run_command(f'jupytext --to ipynb "{myst_file_path}"')
+
+
+def punch_notebook(ipynb_file_path, nbtoolbetlt_config_path):
+    """Run nbtb punch on ipynb_file_path and convert resulting ipynb file
+    back to .md myst file.
+
+    Parameters
+    ----------
+    ipynb_file_path : str
+        path to myst file as posix.
+
+    nbtoolbetlt_config_path : str
+        path to .nbtoolbetlt.json config file
+
+    Returns
+    -------
+    None
+    """
+    run_command(f'nbtb punch --config {nbtoolbetlt_config_path} "{ipynb_file_path}"')
+    run_command(f'jupytext --to md:myst "{ipynb_file_path}"')
 
 def main():
     """Run post-commit tasks based on command-line arguments.
