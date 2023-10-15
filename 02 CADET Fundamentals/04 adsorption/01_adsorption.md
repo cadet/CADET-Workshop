@@ -1,18 +1,17 @@
 ---
-jupyter:
-  jupytext:
-    text_representation:
-      extension: .md
-      format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.15.2
-  kernelspec:
-    display_name: Python 3 (ipykernel)
-    language: python
-    name: python3
+jupytext:
+  formats: ipynb,md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.15.2
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
 ---
 
-<!-- #region user_expressions=[] -->
 # Adsorption models
 
 At the core of chromatographic processes are interactions between the atoms, ions or molecules of a gas, liquid or dissolved solid with a stationary phase.
@@ -22,14 +21,16 @@ In CADET, many different models for adsorption are implemented.
 All of the models can be modelled kinetically or in rapid equilibrium.
 Moreover, many of them include features such as competitive effects, multi state binding, or a mobile phase modifier.
 
-![image.png](attachment:debb9d65-b418-4e89-8b55-488143a5a709.png)
+```{figure} ./resources/Picture1.png
+:width: 50%
+:align: center
+```
 
 **In this lesson,** we will:
 - Learn about different adsorption models.
 - Associate adsorption models with different unit operations.
-<!-- #endregion -->
 
-<!-- #region user_expressions=[] -->
++++ {"slideshow": {"slide_type": "slide"}}
 ## Example 1: Linear model
 
 The simplest model for adsorption is the [linear model](https://cadet.github.io/master/modelling/binding/linear.html).
@@ -42,15 +43,19 @@ In it, we add some porous material s.t.
 - the volume is $1~L$
 
 Then, we add a solution of a component with $1~mol \cdot L^{-1}$.
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(1)
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Linear
 
 binding_model = Linear(component_system, name='linear')
@@ -59,7 +64,9 @@ binding_model.adsorption_rate = [2]
 binding_model.desorption_rate = [1]
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Cstr
 
 reactor = Cstr(component_system, name='reactor')
@@ -71,7 +78,9 @@ reactor.solution_recorder.write_solution_bulk = True
 reactor.solution_recorder.write_solution_solid = True
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import FlowSheet
 
 flow_sheet = FlowSheet(component_system)
@@ -79,14 +88,18 @@ flow_sheet = FlowSheet(component_system)
 flow_sheet.add_unit(reactor)
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Process
 
 process = Process(flow_sheet, 'process')
 process.cycle_time = 10
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.simulator import Cadet
 simulator = Cadet()
 sim_results = simulator.run(process)
@@ -96,43 +109,49 @@ sim_results = simulator.run(process)
 _ = sim_results.solution.reactor.solid.plot()
 ```
 
-<!-- #region user_expressions=[] -->
++++ {"slideshow": {"slide_type": "slide"}}
 ### A note on resolution
 As can be seen in the figure abore, the time resolution is not sufficiently high.
 By default, CADET-Process stores 1 sample per second.
 To increase the resolution, set the `time_resolution` parameter of the `Simulator`.
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 simulator.time_resolution = 0.1
 ```
 
-<!-- #region user_expressions=[] -->
 Now, the solution looks much smoother.
-<!-- #endregion -->
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 sim_results = simulator.run(process)
 
 # _ = sim_results.solution.reactor.bulk.plot()
 _ = sim_results.solution.reactor.solid.plot()
 ```
 
-<!-- #region user_expressions=[] -->
++++ {"slideshow": {"slide_type": "slide"}}
 ## Example 2: Linear adsorption model with linear concentration gradient
 
 To plot the solid phase concentration as a function of the bulk concentration, we can introduce a linear concentration gradient to the `CSTR` that has an initial concentration of $0~mM$.
 For this purpose, we will make use of the `flowrate_filter` function of the `CSTR` (see [here](https://cadet.github.io/master/interface/unit_operations/cstr.html)).
 This way, we can add mass (or particles) to the tank without increasing it's volume.
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(2)
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Linear
 
 binding_model = Linear(component_system, name='linear')
@@ -141,7 +160,9 @@ binding_model.adsorption_rate = [3, 2]
 binding_model.desorption_rate = [1, 1]
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Inlet, Cstr
 
 
@@ -158,7 +179,9 @@ reactor.solution_recorder.write_solution_bulk = True
 reactor.solution_recorder.write_solution_solid = True
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import FlowSheet
 
 flow_sheet = FlowSheet(component_system)
@@ -169,21 +192,27 @@ flow_sheet.add_unit(inlet)
 flow_sheet.add_connection(inlet, reactor)
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Process
 
 process = Process(flow_sheet, 'process')
 process.cycle_time = 10
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.simulator import Cadet
 simulator = Cadet()
 sim_results = simulator.run(process)
 _ = sim_results.solution.reactor.outlet.plot()
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 solution_bulk = sim_results.solution.reactor.bulk.solution
 solution_solid = sim_results.solution.reactor.solid.solution
 import matplotlib.pyplot as plt
@@ -194,7 +223,7 @@ ax.set_xlabel('$c_{bulk}$')
 ax.set_ylabel('$c_{solid}$')
 ```
 
-<!-- #region user_expressions=[] -->
++++ {"slideshow": {"slide_type": "slide"}}
 ## Example 3: Multi component Langmuir model
 
 Usually, the linear isotherm can only be assumed for very low solute concentrations.
@@ -206,6 +235,8 @@ $$q = q_{sat} \cdot \frac{b \cdot c}{1 + b \cdot c} = \frac{a \cdot c}{1 + b \cd
 > $q_{Sat}$: saturation loading
 > $b$ = equilibrium factor
 
+
++++ {"slideshow": {"slide_type": "fragment"}}
 ***Assumptions:***
 - All of the adsorption sites are equivalent, and each site can only accommodate one molecule
 - The surface is energetically homogeneous
@@ -215,15 +246,23 @@ $$q = q_{sat} \cdot \frac{b \cdot c}{1 + b \cdot c} = \frac{a \cdot c}{1 + b \cd
 
 For this example, we will introduce a concentration step to the `CSTR`.
 We consider two components, both with an inital concentration of $0~mM$, but with different binding strengths.
-<!-- #endregion -->
 
-```python
+
++++ {"slideshow": {"slide_type": "slide"}}
+To start: create a `ComponentSystem`
+
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(2)
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Langmuir
 
 binding_model = Langmuir(component_system, name='langmuir')
@@ -233,7 +272,13 @@ binding_model.desorption_rate = [1,1]
 binding_model.capacity = [1,1]
 ```
 
-```python
++++ {"slideshow": {"slide_type": "slide"}}
+Set up the `processModel`
+
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Inlet, Outlet, Cstr
 
 inlet = Inlet(component_system, name='inlet')
@@ -249,7 +294,13 @@ reactor.solution_recorder.write_solution_bulk = True
 reactor.solution_recorder.write_solution_solid = True
 ```
 
-```python
++++ {"slideshow": {"slide_type": "slide"}}
+Set up the `FlowSheet`
+
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import FlowSheet
 
 flow_sheet = FlowSheet(component_system)
@@ -260,14 +311,26 @@ flow_sheet.add_unit(inlet)
 flow_sheet.add_connection(inlet,reactor)
 ```
 
-```python
++++ {"slideshow": {"slide_type": "slide"}}
+Create a `Process`
+
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Process
 
 process = Process(flow_sheet, 'process')
 process.cycle_time = 10
 ```
 
-```python
++++ {"slideshow": {"slide_type": "slide"}}
+Create a `Simulator` and simulate
+
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.simulator import Cadet
 
 simulator = Cadet()
@@ -277,7 +340,13 @@ sim_results = simulator.run(process)
 _ = sim_results.solution.reactor.outlet.plot()
 ```
 
-```python
++++ {"slideshow": {"slide_type": "slide"}}
+Plot the solutions
+
+
+```{code-cell} ipython3
+:tags: [solution]
+
 solution_bulk = sim_results.solution.reactor.bulk.solution
 solution_solid = sim_results.solution.reactor.solid.solution
 import matplotlib.pyplot as plt
@@ -286,4 +355,10 @@ ax.plot(solution_bulk, solution_solid)
 ax.set_title('Isotherm')
 ax.set_xlabel('$c_{bulk}$')
 ax.set_ylabel('$c_{solid}$')
+```
+
+```{code-cell} ipython3
+:tags: [solution]
+
+
 ```

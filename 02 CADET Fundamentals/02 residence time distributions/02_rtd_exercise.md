@@ -1,36 +1,43 @@
 ---
-jupyter:
-  jupytext:
-    text_representation:
-      extension: .md
-      format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.15.2
-  kernelspec:
-    display_name: Python 3 (ipykernel)
-    language: python
-    name: python3
+jupytext:
+  formats: ipynb,md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.15.2
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
 ---
 
-<!-- #region user_expressions=[] -->
++++
 # Residence Time Distribution - Exercises
-<!-- #endregion -->
 
-<!-- #region user_expressions=[] -->
+
++++
 ## Exercise 1: Step function in CSTR
 
 Analyze how the concentration profile of a `CSTR` reacts to a step function:
+```{figure} ./resources/step.png
+:width: 50%
+:align: center
+```
 
-![step.png](attachment:f53e0416-fac1-427a-9a0a-dbdcc6afe950.png)
-
-![RTD_CSTR.png](attachment:09638363-5739-451a-b573-5a9b8bb960b1.png)
+```{figure} ./resources/RTD_CSTR.png
+:width: 50%
+:align: center
+```
 
 
 
 ***Hint:*** Always check the input arguments of our model template functions.
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(1)
@@ -68,13 +75,17 @@ flow_sheet.add_connection(inlet, cstr)
 flow_sheet.add_connection(cstr, outlet)
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Process
 process = Process(flow_sheet, 'rtd_cstr')
 process.cycle_time = 10 * tau
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.simulator import Cadet
 
 simulator = Cadet()
@@ -84,13 +95,15 @@ simulation_results.solution.cstr.inlet.plot()
 simulation_results.solution.cstr.outlet.plot()
 ```
 
-<!-- #region user_expressions=[] -->
++++ {"slideshow": {"slide_type": "slide"}}
 ## Exercise 2: Step function in Tubular reactor
 
 **Task:** Also analyze the system behaviour of a Tubular reactor for different input profiles (see Exercise 1).
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(1)
@@ -128,13 +141,17 @@ flow_sheet.add_connection(inlet, pfr)
 flow_sheet.add_connection(pfr, outlet)
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Process
 process = Process(flow_sheet, 'rtd_pfr')
 process.cycle_time = 10 * tau
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.simulator import Cadet
 
 simulator = Cadet()
@@ -144,15 +161,19 @@ simulation_results.solution.pfr.inlet.plot()
 simulation_results.solution.pfr.outlet.plot()
 ```
 
-<!-- #region user_expressions=[] -->
++++ {"slideshow": {"slide_type": "slide"}}
 ## Bonus Exercise
 Many systems can be modelled by a chain of unit operations.
 
-![system_chain.png](attachment:e95f8112-76c1-44d5-9659-f30d10d27eeb.png)
-
+```{figure} ./resources/system_chain.png
+:width: 50%
+:align: center
+```
 Try connecting combining both the CSTR with a Tubular reactor and analyze the behavior.
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 
 ```

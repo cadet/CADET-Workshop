@@ -137,6 +137,7 @@ outlet = Outlet(component_system, 'outlet')
 Note that the `Outlet` unit does not have any model parameters.
 
 ```{code-cell} ipython3
+:tags: [solution]
 print(outlet.parameters)
 ```
 
@@ -199,6 +200,7 @@ print(inlet.section_dependent_parameters)
 Note that also flow sheet connectivity can be added as events. More on that later.
 
 ```{code-cell} ipython3
+:tags: [solution]
 print(process.flow_sheet.section_dependent_parameters)
 ```
 

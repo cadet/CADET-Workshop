@@ -6,7 +6,7 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.15.2
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
@@ -21,6 +21,7 @@ The simplest program in Python consists of a line that tells the computer a comm
 ***Task:*** Change ```'Hello world!'``` to a different text message.
 
 ```{code-cell} ipython3
+:tags: [solution]
 print('Hello world!')
 ```
 
@@ -32,6 +33,7 @@ The most important thing to learn in programming is finding help. The easiest wa
 ***Task:*** Show the help documentation for the ```max``` function instead of the ```print``` function. Based on the help, use the ```max``` function to find the highest value of two numbers: ```5``` and ```2```.
 
 ```{code-cell} ipython3
+:tags: [solution]
 help(print)
 ```
 
@@ -44,10 +46,12 @@ Python can be used just like a calculator. Enter an expression and the interpret
 ***Task:*** Play around with the interpreter and enter some equations!
 
 ```{code-cell} ipython3
+:tags: [solution]
 1 + 1
 ```
 
 ```{code-cell} ipython3
+:tags: [solution]
 (50 * 5 - 6) / 3
 ```
 
@@ -71,6 +75,7 @@ We've already seen some operators. Operators are used to transform, compare, joi
 ***Example:***
 
 ```{code-cell} ipython3
+:tags: [solution]
 # Area of unit circle. <-- Note the '#', it makes everything after that a comment, i.e. it will NOT be executed
 3.1415926/4 * 2**2
 ```
@@ -78,18 +83,21 @@ We've already seen some operators. Operators are used to transform, compare, joi
 ***Example:***
 
 ```{code-cell} ipython3
+:tags: [solution]
 1 == 0
 ```
 
 ***Task:*** Calculate the volume of the unit sphere.
 
 ```{code-cell} ipython3
+:tags: [solution]
 
 ```
 
 ***Task:*** Determine whether $35^2$ is greater than $2^{10}$.
 
 ```{code-cell} ipython3
+:tags: [solution]
 
 ```
 
@@ -104,6 +112,7 @@ The operand to the left of the ```=``` operator is the name of the variable and 
 ***Example:***
 
 ```{code-cell} ipython3
+:tags: [solution]
 answer = 42
 print(answer)
 ```
@@ -111,6 +120,7 @@ print(answer)
 ***Task:*** Correct the following errors in the variable names and print their values.
 
 ```{code-cell} ipython3
+:tags: [solution]
 1diameter = 1
 length! = 10
 circle_area = 3.1415926/4* diameter**2
@@ -120,6 +130,7 @@ circle_area = 3.1415926/4* diameter**2
 ***Task:*** Write an equation for the volume of a cylinder using predefined variables.
 
 ```{code-cell} ipython3
+:tags: [solution]
 
 ```
 
@@ -140,6 +151,7 @@ The type can be determined using the ```type``` function.
 ***Example:***
 
 ```{code-cell} ipython3
+:tags: [solution]
 foo = 2.0
 print(type(foo))
 ```
@@ -147,6 +159,7 @@ print(type(foo))
 ***Task:*** Print the variable value and type for ```answer```, and ```file_name```.
 
 ```{code-cell} ipython3
+:tags: [solution]
 answer = 42
 file_name = "readme.md"
 ```
@@ -158,6 +171,7 @@ Almost everything in Python has *attributes* and *methods*.
 ***Example:*** Complex numbers are an extension of the familiar real number system in which all numbers are expressed as a sum of a real part and an imaginary part. Imaginary numbers are real multiples of the imaginary unit (the square root of -1), written with $j$ in Python. You can access the real and imaginary parts of complex numbers using ```real``` and ```imganiary``` parts.
 
 ```{code-cell} ipython3
+:tags: [solution]
 c = complex(3,2)
 print(type(c))
 print(c.real)
@@ -167,6 +181,7 @@ print(c.imag)
 ***Task:*** The method ```upper()``` returns a copy of the string in which all case-based characters have been uppercased. Use this method to capitalize a string variable.
 
 ```{code-cell} ipython3
+:tags: [solution]
 
 ```
 
@@ -178,6 +193,7 @@ Lists are the most versatile compound data type for grouping together values in 
 ***Example:***
 
 ```{code-cell} ipython3
+:tags: [solution]
 my_list = ['abcd', 786 , 2.23, 'john', 70.2]
 print(my_list)
 print(my_list[0])
@@ -186,12 +202,14 @@ print(my_list[0])
 ***Task:*** Print elements starting from 3rd element.
 
 ```{code-cell} ipython3
+:tags: [solution]
 
 ```
 
 ***Task:*** Append ```99``` to the list using the ```append()``` method.
 
 ```{code-cell} ipython3
+:tags: [solution]
 
 ```
 
@@ -205,6 +223,7 @@ keys, which can be either numbers or strings.
 ***Example:***
 
 ```{code-cell} ipython3
+:tags: [solution]
 my_dict = {'name': 'Cadet', 'version': '4.1.0', 'nUsers': 500}
 print(my_dict)
 print(my_dict['name'])
@@ -215,6 +234,7 @@ print(my_dict['nDownloads'])
 Dictionaries, like lists, can be nested.
 
 ```{code-cell} ipython3
+:tags: [solution]
 my_dict = {'name': 'Cadet', 'version': '4.1.0', 'nUsers': 500}
 my_dict['stats'] = { 'github_stars': 1000, 'downloads': 2000, 'issues': 3}
 print(my_dict)
@@ -225,6 +245,7 @@ print(my_dict)
 Since the syntax to traverse deeply nested dictionaries can be quite tedious, we can use the package `addict` to simplify it to the dot notation.
 
 ```{code-cell} ipython3
+:tags: [solution]
 from addict import Dict
 
 my_new_dict = Dict(my_dict)
@@ -250,6 +271,7 @@ Conditional statements are used to direct the flow of the program to different c
 ***Example:***
 
 ```{code-cell} ipython3
+:tags: [solution]
 x = 4
 if x < 3:
     print('less than 3')
@@ -263,6 +285,7 @@ else:
 **Hint:** Check the operators list for membership statements.
 
 ```{code-cell} ipython3
+:tags: [solution]
 menu = ['eggs','bacon']
 ```
 
@@ -274,6 +297,7 @@ Often, we don't know (or care) how many elements are in a container (e.g. list).
 ***Example:***
 
 ```{code-cell} ipython3
+:tags: [solution]
 list_of_primes = [2, 3, 5, 7]
 for element in list_of_primes:
     print(element)
@@ -282,6 +306,7 @@ for element in list_of_primes:
 ***Task:*** Create a list with strings, iterate over all elements and print the string and the length of the string using the ```len``` function.
 
 ```{code-cell} ipython3
+:tags: [solution]
 
 ```
 
@@ -296,6 +321,7 @@ A function definition describes what is to be calculated once the function is ca
 ***Example:***
 
 ```{code-cell} ipython3
+:tags: [solution]
 def circle_area(diameter):
     return 3.1415926/4 * diameter**2
 
@@ -306,5 +332,6 @@ print(area)
 ***Task:*** Define a function that returns the volume of a cylinder as a function of diameter and length.
 
 ```{code-cell} ipython3
+:tags: [solution]
 
 ```

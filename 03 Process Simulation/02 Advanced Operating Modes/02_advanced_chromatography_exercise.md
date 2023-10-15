@@ -1,17 +1,18 @@
 ---
-jupyter:
-  jupytext:
-    text_representation:
-      extension: .md
-      format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.15.2
-  kernelspec:
-    display_name: Python 3 (ipykernel)
-    language: python
-    name: python3
+jupytext:
+  formats: ipynb,md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.15.2
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
 ---
 
++++ {"slideshow": {"slide_type": "slide"}}
 # Advanced Chromatographic Processes - Exercises
 
 
@@ -21,7 +22,9 @@ Take the example from the lesson and add tubing using a `TubularReactor` with $L
 
 ***Task:*** Plot the inlet and outlet of every unit operation and compare the results to a system without any considerations for valving and tubing.
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 Q = 1e-6/60
 
 from CADETProcess.processModel import ComponentSystem
@@ -103,7 +106,9 @@ process.add_event('eluent_on', 'flow_sheet.eluent.flow_rate', Q, 60)
 process.cycle_time = 1200
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.simulator import Cadet
 process_simulator = Cadet()
 
@@ -112,19 +117,25 @@ _ = simulation_results.solution.column.inlet.plot()
 _ = simulation_results.solution.column.outlet.plot()
 ```
 
++++ {"slideshow": {"slide_type": "slide"}}
 ## Example 2: Carousel System
 
 Consider the following multi column system:
 
-![carousel.png](attachment:b1bdb3d4-716c-4d50-a3fc-541eb4b53784.png)
-
+```{figure} ./resources/carousel.png
+:width: 50%
+:align: center
+```
 There exist four zones in this system:
 - Wash: 3 columns in series
 - Feed: 3 columns in parallel
 - Dilute: 2 columns in series; reverse flow
 - Elute: 2 Columns in series
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Inlet, Outlet
 i_wash = Inlet(component_system, name='i_wash')
 i_wash.c = [0, 0]
@@ -140,9 +151,13 @@ o_waste = Outlet(component_system, name='o_waste')
 o_product = Outlet(component_system, name='o_product')
 ```
 
++++ {"slideshow": {"slide_type": "slide"}}
 Now the zones are set up and the reverse flow is set in the dilution zone.
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.modelBuilder import SerialZone, ParallelZone
 
 z_wash = SerialZone(component_system, 'z_wash', 3)
@@ -152,9 +167,13 @@ z_elute = SerialZone(component_system, 'z_elute', 2)
 
 ```
 
++++ {"slideshow": {"slide_type": "slide"}}
 As in the previous example, the units and zones are added and connected in the CarouselBuilder
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.modelBuilder import CarouselBuilder
 
 builder = CarouselBuilder(component_system, 'multi_zone')
