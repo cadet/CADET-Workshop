@@ -11,7 +11,7 @@ kernelspec:
   name: python3
 ---
 
-+++ {"user_expressions": []}
++++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
 
 # Inlet Profiles - Exercise
 
@@ -21,13 +21,17 @@ kernelspec:
 
 Create the following flow profile:
 
-![2_comp.png](attachment:37222631-2431-4ab8-9c94-8a8d97c26346.png)
-
+```{figure} ./resources/2_comp.png
+:width: 50%
+:align: center
+```
 Assume a flow rate of $Q = 1\cdot mL\cdot min^{-1}$
 
 ***Hint:*** We need to specify a second component for the template function and then pass a list of to the concentration parameter.
 
 ```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(2)
@@ -62,19 +66,23 @@ simulation_results = simulator.simulate(process)
 _ = simulation_results.solution.outlet.inlet.plot()
 ```
 
-+++ {"user_expressions": []}
++++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
 
 ## Exercise 2
 
 Create the following inlet profile:
 
-![gradient.png](attachment:0f21ee25-e395-489f-bf25-144bb796fde4.png)
+```{figure} ./resources/gradient.png
+:width: 50%
+:align: center
+```
 
 Assume a flow rate of $Q = 1\cdot mL\cdot min^{-1}$
 
 ***Hint:*** We need three `Events` and for linear gradients, the concentration for each component needs to be passed as a list of cubic polynomial coefficients.
 
 ```{code-cell} ipython3
+:tags: [solution]
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(1)
@@ -110,7 +118,7 @@ simulation_results = simulator.simulate(process)
 _ = simulation_results.solution.outlet.inlet.plot()
 ```
 
-+++ {"user_expressions": []}
++++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
 
 ## Bonus Exercise: Changing the system connectivity
 
@@ -123,6 +131,7 @@ Instead of creating inlet profiles by modifying the concentration profile of a s
 ### Example 1
 
 ```{code-cell} ipython3
+:tags: [solution]
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(2)
@@ -167,11 +176,12 @@ simulation_results = simulator.simulate(process)
 _ = simulation_results.solution.outlet.inlet.plot()
 ```
 
-+++ {"user_expressions": []}
++++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
 
 ### Example 2
 
 ```{code-cell} ipython3
+:tags: [solution]
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(1)

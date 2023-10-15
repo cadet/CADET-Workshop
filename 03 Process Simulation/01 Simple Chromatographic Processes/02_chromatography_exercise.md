@@ -1,22 +1,22 @@
 ---
-jupyter:
-  jupytext:
-    text_representation:
-      extension: .md
-      format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.15.2
-  kernelspec:
-    display_name: Python 3 (ipykernel)
-    language: python
-    name: python3
+jupytext:
+  formats: ipynb,md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.15.2
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
 ---
 
-<!-- #region user_expressions=[] -->
++++
 # Chromatographic Processes - Exercise
-<!-- #endregion -->
 
-<!-- #region user_expressions=[] -->
+
++++
 ## Exercise 1: Combine nonbinding tracer with binding components
 
 From the tutorial, combine the dextran pulse with the langmuir experiment.
@@ -25,9 +25,11 @@ Then, start modifying:
 - Adsorption parameters
 - Transport parameters
 - Flow Rates
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import ComponentSystem
 from CADETProcess.processModel import Langmuir
 from CADETProcess.processModel import Inlet, LumpedRateModelWithPores, Outlet
@@ -84,7 +86,7 @@ simulation_results = simulator.simulate(process)
 _ = simulation_results.solution.column.outlet.plot()
 ```
 
-<!-- #region user_expressions=[] -->
++++ {"slideshow": {"slide_type": "slide"}}
 ## Exercise 2: Multiple injections
 
 For some processes, multiple injections onto a column in sequence.
@@ -92,9 +94,11 @@ Take the previous example and create an inlet profile with three injections.
 For this purpose, the `Simulator` can automatically run multiple simulations by setting `n_cycles`.
 
 ***Task:*** Try finding the best interval (cycle time) s.t. the column is used most efficiently.
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import ComponentSystem
 from CADETProcess.processModel import Langmuir
 from CADETProcess.processModel import Inlet, LumpedRateModelWithPores, Outlet
@@ -151,16 +155,18 @@ simulation_results = simulator.simulate(process)
 _ = simulation_results.solution.column.outlet.plot()
 ```
 
-<!-- #region user_expressions=[] -->
++++ {"slideshow": {"slide_type": "slide"}}
 ## Example 3: Load wash elute with three components
 
 Add a second protein component to the LWE example from the tutorial lesson.
 Assume that all parameters are the same as the first protein, only change:
 - adsorption rate: $0.3~m^{3}_{MP}m^{-3}_{SP}s^{-1}$
 - characteristic charge: $5.0$
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 import numpy as np
 
 from CADETProcess.processModel import ComponentSystem

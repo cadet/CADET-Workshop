@@ -1,22 +1,24 @@
 ---
-jupyter:
-  jupytext:
-    text_representation:
-      extension: .md
-      format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.15.2
-  kernelspec:
-    display_name: Python 3 (ipykernel)
-    language: python
-    name: python3
+jupytext:
+  formats: ipynb,md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.15.2
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
 ---
 
-<!-- #region user_expressions=[] -->
++++ {"slideshow": {"slide_type": "slide"}}
 # Adsorption Models - Exercise
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(['A'])
@@ -66,7 +68,7 @@ _ = sim_results.solution.reactor.outlet.plot()
 
 ```
 
-<!-- #region user_expressions=[] -->
++++ {"slideshow": {"slide_type": "slide"}}
 
 ## Exercise 1: Breakthrough curve in a Column
 
@@ -80,9 +82,11 @@ Try experimenting with:
 - The number of components.
 - Modify how many components bind.
 - Compare kinetic binding with rapid equilibrium.
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(['A', 'B'])
@@ -133,7 +137,7 @@ sim_results = simulator.run(process)
 _ = sim_results.solution.reactor.outlet.plot()
 ```
 
-<!-- #region user_expressions=[] -->
++++ {"slideshow": {"slide_type": "slide"}}
 ## Exercise 2: Langmuir Model in Column
 
 Let us consider the same experiment as in the first example, but this time with `Langmuir` adsorption model.
@@ -146,9 +150,11 @@ Try experimenting with:
 - The number of components.
 - Modify how many components bind.
 - Compare kinetic binding with rapid equilibrium.
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(['A', 'B'])
@@ -201,7 +207,7 @@ _ = sim_results.solution.reactor.outlet.plot()
 
 ```
 
-<!-- #region user_expressions=[] -->
++++ {"slideshow": {"slide_type": "slide"}}
 ## Bonus Exercise
 
 There are many other models implemented in `CADET`.
@@ -210,8 +216,10 @@ Moreover, binding models can use external functions for modifying the values of 
 This could be used to model other effects like temperature that have an influence on the binding strength.
 
 Try implementing some of the more advanced isotherms and features.
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 
 ```

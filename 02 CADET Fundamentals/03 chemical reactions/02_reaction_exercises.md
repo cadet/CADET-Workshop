@@ -1,15 +1,15 @@
 ---
-jupyter:
-  jupytext:
-    text_representation:
-      extension: .md
-      format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.15.2
-  kernelspec:
-    display_name: Python 3 (ipykernel)
-    language: python
-    name: python3
+jupytext:
+  formats: ipynb,md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.15.2
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
 ---
 
 # Lesson 3: Exercises
@@ -28,12 +28,16 @@ $$\ce{A <=>[k_{AB}][k_{BA}] B <=>[k_{BC}][k_{CB}] C}$$
 - $k_{BC} = 0.060~s^{-1}$
 - $k_{CB} = 0.0~s^{-1}$
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import ComponentSystem
 component_system = ComponentSystem(['A', 'B', 'C'])
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import MassActionLaw
 reaction_system = MassActionLaw(component_system)
 reaction_system.add_reaction(
@@ -50,7 +54,9 @@ reaction_system.add_reaction(
 )
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Cstr
 reactor = Cstr(component_system, 'reactor')
 reactor.V = 1e-6
@@ -58,7 +64,9 @@ reactor.bulk_reaction_model = reaction_system
 reactor.c = [1.0, 0.0, 0.0]
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import FlowSheet
 flow_sheet = FlowSheet(component_system)
 flow_sheet.add_unit(reactor)
@@ -68,14 +76,16 @@ process = Process(flow_sheet, 'reaction_demo')
 process.cycle_time = 100
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.simulator import Cadet
 simulator = Cadet()
 sim_results = simulator.run(process)
 _ = sim_results.solution.reactor.outlet.plot()
 ```
 
-<!-- #region -->
++++ {"slideshow": {"slide_type": "slide"}}
 ## Exercise 2: Equilibrium reaction with intermediate state in tubular reactor
 ***Task:*** Implement the reaction in a tubular reactor and plot the results at the outlet, as well as over the length of the column for the last timestep.
 
@@ -89,15 +99,19 @@ For the `TubularReactor` use the following parameters:
 
 
 ***Hint:*** To plot the bulk solution, make sure that you set the `write_solution_bulk` flag in the `TubularReactor`.
-<!-- #endregion -->
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(['A', 'B','C'])
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import MassActionLaw
 
 reaction_system = MassActionLaw(component_system)
@@ -115,7 +129,9 @@ reaction_system.add_reaction(
 )
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import Inlet, TubularReactor, Outlet
 
 inlet = Inlet(component_system, name='inlet')
@@ -133,7 +149,9 @@ reactor.axial_dispersion = 1e-7
 reactor.solution_recorder.write_solution_bulk = True
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.processModel import FlowSheet
 
 flow_sheet = FlowSheet(component_system)
@@ -149,7 +167,9 @@ process = Process(flow_sheet, 'reaction_demo')
 process.cycle_time = 100
 ```
 
-```python
+```{code-cell} ipython3
+:tags: [solution]
+
 from CADETProcess.simulator import Cadet
 
 simulator = Cadet()
@@ -157,6 +177,7 @@ sim_results = simulator.simulate(process)
 _ = sim_results.solution.reactor.bulk.plot_at_time(100)
 ```
 
++++ {"slideshow": {"slide_type": "slide"}}
 ## Bonus Exercise
 
 Try implementing other reaction systems such as:
@@ -167,6 +188,9 @@ $$\ce{2 A + B ->[k_{1}] C}$$
 $$\ce{A + B <=>[k_{1}][k_{-1}] C ->[k_{2}] D}$$
 $$\ce{A + B ->[k_{1}] C} \quad \text{and as a parallel reaction} \quad \ce{A + C ->[k_{2}] D}$$
 
-```python
+
+```{code-cell} ipython3
+:tags: [solution]
+
 
 ```
