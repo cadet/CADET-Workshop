@@ -60,13 +60,9 @@ $$\tau = \frac{V}{Q}$$
 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
-<div class="alert alert-info">
-
-**Note:**
-
+```{note}
 In reality, it is impossible to obtain such rapid mixing, especially on industrial scales where reactor vessels may range between 1 and thousands of cubic meters, and hence the RTD of a real reactor will deviate from the ideal exponential decay.
-
-</div>
+```
 
 +++ {"slideshow": {"slide_type": "slide"}}
 
@@ -104,10 +100,7 @@ Assume the following parameters:
 
 ```{code-cell} ipython3
 :tags: [solution]
----
-slideshow:
-  slide_type: fragment
----
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(1)
@@ -159,6 +152,7 @@ Although an infinitely short injection cannot be produced, it can be made much s
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 step_size = 1e-3
 
 from CADETProcess.processModel import Process
@@ -175,6 +169,7 @@ process.add_event('end peak', 'flow_sheet.inlet.c', 0, step_size)
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 from CADETProcess.simulator import Cadet
 
 simulator = Cadet()
@@ -210,7 +205,7 @@ The RTD of a real reactor deviates from that of an ideal reactor, depending on t
 
 Although in CADET there is no explicit implementation of the PFR model, we can still model this reactor if we use any of the column models and set the porosity to 1 and the axial dispersion to 0.
 
-In this example, we will use the `LUMPED_RATE_MODEL_WITHOUT_PORES`. For the model equations see [here](https://cadet.github.io/master/modelling/unit_operations/lumped_rate_model_without_pores.html) and the parameters [here](https://cadet.github.io/master/interface/unit_operations/lumped_rate_model_without_pores.html).
+In this example, we will use the `LumpedRateModelWithoutPores`. For the model equations see [here](https://cadet.github.io/master/modelling/unit_operations/lumped_rate_model_without_pores.html) and the parameters [here](https://cadet.github.io/master/interface/unit_operations/lumped_rate_model_without_pores.html).
 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
@@ -225,10 +220,7 @@ Assume the following parameters:
 
 ```{code-cell} ipython3
 :tags: [solution]
----
-slideshow:
-  slide_type: fragment
----
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(1)
@@ -268,12 +260,10 @@ flow_sheet.add_connection(inlet, pfr)
 flow_sheet.add_connection(pfr, outlet)
 ```
 
++++ {"slideshow": {"slide_type": "fragment"}}
 ```{code-cell} ipython3
-:tags: [solution]
----
-slideshow:
-  slide_type: fragment
----
+tags: [solution]
+
 step_size = 1e-3
 
 from CADETProcess.processModel import Process
@@ -290,6 +280,7 @@ process.add_event('end peak', 'flow_sheet.inlet.c', 0, step_size)
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 from CADETProcess.simulator import Cadet
 
 simulator = Cadet()
@@ -299,20 +290,16 @@ simulation_results.solution.pfr.inlet.plot()
 simulation_results.solution.pfr.outlet.plot()
 ```
 
-+++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}}
 
-<div class="alert alert-danger">
-
-**Warning:**
-
+```{warning}
 Because of numerical dispersion, solvers like CADET are not suited to simulate stiff systems like the one presented.
 To get a more acurate solution, the number of axial cells needs to be increased (a lot) which also increases simulation time (a lot).
 Since usually there is some (physical) dispersion in real systems anyway, mostly this is not a problem because it will smoothen the profiles anyway.
 The example just serves to show the limitations of CADET and that while it may not be very accurate in this case, the value of the mean residence time is still where we would expect it.
+```
 
-</div>
-
-+++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}}
 
 ### Discretization
 
@@ -322,43 +309,42 @@ Since the lumped rate model without pores does not have particles, we only need 
 The default is $100$ which should work for most scenarios.
 
 
-<div class="alert alert-info">
-
-**Info:**
-
+```{note}
 CADET currently uses a finite volume scheme for the spatial discretization.
 However, we are in the process of implementing a new method, the *Discontinuous Galerkin* method which will increase speed substantially.
-
-</div>
+```
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 pfr.discretization
 ```
 
-+++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "fragment"}}
 
 ### High discretization
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 pfr.discretization.ncol = 2000
 simulation_results = simulator.simulate(process)
 simulation_results.solution.pfr.outlet.plot()
 ```
 
-+++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
++++ {"user_expressions": []}
 
 ### Low discretization
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 pfr.discretization.ncol = 20
 simulation_results = simulator.simulate(process)
 simulation_results.solution.pfr.outlet.plot()
 ```
 
-+++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}}
 
 ### Visualization
 
@@ -371,6 +357,7 @@ Then, the `SimulationResults` will also contain an entry for the bulk.
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 pfr.solution_recorder.write_solution_bulk = True
 
 simulation_results = simulator.simulate(process)
@@ -378,16 +365,18 @@ simulation_results = simulator.simulate(process)
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 simulation_results.solution.pfr.bulk.plot_at_position(0.5)
 simulation_results.solution.pfr.bulk.plot_at_time(0.01)
 ```
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 from ipywidgets import interact, interactive
 import ipywidgets as widgets
 
-
+Visualization
 def graph_column(time=0):
     fig, ax = simulation_results.solution.pfr.bulk.plot_at_time(time)
     ax.set_ylim(0,0.1)

@@ -43,16 +43,16 @@ kernelspec:
 
 ## Simulation
 
-```{figure} ./resources/simulation_hidden_stationarity.png
+```{figure} ./resources/simulation.png
 :align: center
-:width: 33%
+:width: 50%
 ```
 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
 ```{figure} ./resources/simulation_results.png
 :align: center
-:width: 33%
+:width: 50%
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
@@ -61,7 +61,7 @@ kernelspec:
 
 ```{figure} ./resources/stationarity.png
 :align: center
-:width: 33%
+:width: 50%
 ```
 
 +++ {"slideshow": {"slide_type": "fragment"}}
@@ -123,7 +123,7 @@ kernelspec:
 
 +++ {"slideshow": {"slide_type": "slide"}}
 
-## Parameter Estimation
+## Optimization - Parameter Estimation
 
 ```{figure} ./resources/parameter_estimation.png
 :align: center

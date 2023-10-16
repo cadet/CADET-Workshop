@@ -36,10 +36,9 @@ $$
 \ce{1 A ->[k_{AB}] 1 B}
 $$
 
-
 +++
-First, initiate a `ComponentSystem` with components `A` and `B`.
 
+First, initiate a `ComponentSystem` with components `A` and `B`.
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -49,6 +48,7 @@ component_system = ComponentSystem(['A', 'B'])
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 Then, configure the `MassActionLaw` reaction model.
 To instantiate it, pass the `ComponentSystem`.
 Then, add the reaction using the `add_reaction` method.
@@ -57,7 +57,6 @@ The following arguments are expected:
 - stoichiometric coefficients in the order of the indices
 - forward reaction rate
 - backward reaction rate
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -73,12 +72,11 @@ reaction_system.add_reaction(
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 To demonstrate this reaction, a `Cstr` is instantiated and the reaction is added to the tank.
 Moreover, the initial conditions are set.
 In principle, the `Cstr` supports reactions in bulk and particle pore phase.
 Since the porosity is $1$ by default, only the bulk phase is considered.
-
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -92,9 +90,9 @@ reactor.c = [1.0, 0.0]
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 Now, the reactor is added to a `FlowSheet` and a `Process` is set up.
 Here, the `FlowSheet` only consists of a single `Cstr`, and there are no `Events` in the process.
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -109,8 +107,8 @@ process.cycle_time = 100
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
-After simulation, the results can be plotted:
 
+After simulation, the results can be plotted:
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -122,6 +120,7 @@ _ = sim_results.solution.reactor.outlet.plot()
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 ## Equilibrium Reactions
 It is also possible to consider equilibrium reactions where the product can react back to the educts.
 
@@ -129,10 +128,9 @@ $$
 \ce{ 2 A <=>[k_{AB}][k_{BA}] B}
 $$
 
-
 +++ {"slideshow": {"slide_type": "slide"}}
-Here, the same units, flow sheet, and process are reused which were defined above.
 
+Here, the same units, flow sheet, and process are reused which were defined above.
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -149,8 +147,8 @@ reactor.bulk_reaction_model = reaction_system
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
-After simulation, the results can be plotted:
 
+After simulation, the results can be plotted:
 
 ```{code-cell} ipython3
 :tags: [solution]

@@ -138,6 +138,7 @@ Note that the `Outlet` unit does not have any model parameters.
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 print(outlet.parameters)
 ```
 
@@ -201,6 +202,7 @@ Note that also flow sheet connectivity can be added as events. More on that late
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 print(process.flow_sheet.section_dependent_parameters)
 ```
 

@@ -13,34 +13,34 @@ kernelspec:
 ---
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 # Simple Chromatographic Processes
 
 Chromatography is a thermal separation technique for the separation of mixtures dissolved in a fluid called the mobile phase, which carries the gasous or liquid mixture through a structure holding another material, called the stationary phase.
 
-
-
 +++ {"slideshow": {"slide_type": "fragment"}}
+
 The various constituents of the mixture travel at different speeds, causing them to separate.
 The separation itself is based on different partitioning between the mobile and stationary phases.
 
 Different mechanisms can be used for the separation, e.g. adsorption, ion exchange, size exclusion to achieve high purities separations of multicomponent mixtures.
 For each mechanism, various stationary phases are available.
 
-
 +++ {"slideshow": {"slide_type": "slide"}}
+
 Generally, chromatographic models are used for optimization of preparative processes.
 In contrast to analytical chromatography, which serves to identify or quantify analytes in a mixture, the purpose of preparative chromatography, is the isolation and purification of sufficient quantities of a specific substance for further use.
 
-
 +++ {"slideshow": {"slide_type": "fragment"}}
+
 For modelling these processes, we have to combine all of the techniques we learnt in the previous lessons:
 - Configure unit operations models.
 - Associate adsorption models with unit operations.
 - Generate dynamic inlet profiles.
 - Chemical reactions (if required)
 
-
 +++ {"slideshow": {"slide_type": "slide"}}
+
 ## Example 1: Dextran pulse
 
 In this exercise, we will consider the following system:
@@ -50,35 +50,30 @@ In this exercise, we will consider the following system:
 :align: center
 ```
 
-
-
 +++ {"slideshow": {"slide_type": "fragment"}}
+
 Before considering 'real' chromatography, we will model a simple experiment meant to find the porosity and axial dispersion of a column by sending a dextran pulse through the column.
 There will be no binding or pore penetration considered yet.
 
-
 +++ {"slideshow": {"slide_type": "slide"}}
+
 For the column, assume the following parameters which are usually provided by the manufacturer (or can be measured):
 - length: $0.1~m$
 - diameter: $0.01~m$
 - particle radius: $4.5 \cdot 10^{-5}~m$
 - particle porosity: $0.33$
 
-
-
 +++ {"slideshow": {"slide_type": "fragment"}}
+
 Moreover, since Dextran does not penetrate pores, the film diffusion coefficient can be set to $0~m \cdot s^{-1}$.
 
-
-
-
 +++ {"slideshow": {"slide_type": "slide"}}
+
 Finally, bed porosity and axial dispersion need to be specified.
 Usually, these parameters will be estimated using an inverse method (see later tutorials).
 For now, assume the following values:
 - bed porosity: $0.37$
 - axial dispersion: $2.0 \cdot 10^{-7}~m^2 \cdot s^{-1}$
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -115,6 +110,7 @@ flow_sheet.add_connection(column, outlet)
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 For the injection, we need to Introduce two sections.
 In the first section, which lasts $50~s$, the concentration of Dextran at the `INLET` is $1.0~mM$, afterwards it is $0.0~mM$.
 The flow rate is a constant $1~mL \cdot min^{-1}$.
@@ -123,7 +119,6 @@ The flow rate is a constant $1~mL \cdot min^{-1}$.
 :width: 50%
 :align: center
 ```
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -143,20 +138,18 @@ _ = simulation_results.solution.column.outlet.plot()
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 ## Example 2: Multi Component Langmuir Separation
 
 Now, we will use the same system, but add `Langmuir` model to the column with two components using batch elution chromatography.
 This process is often used for the purification of small molecules like amino acids or sugars.
 
-
-
-
 +++ {"slideshow": {"slide_type": "fragment"}}
+
 For the Langmuir isotherm, use the following parameters:
 - adsorption rate: $[0.02, 0.03]~m^3 mol^{-1} s^{-1}$
 - desorption rate: $[1, 1]~s^{-1}$
 - binding capacity: $[100, 100]~mM$
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -214,8 +207,8 @@ flow_sheet.add_connection(column, outlet)
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
-Again, we create two sections to model the injections.
 
+Again, we create two sections to model the injections.
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -236,12 +229,12 @@ process.cycle_time = 1200
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 ### A Note on Event Dependencies
 
 Often, multiple `Events` happen simulateneously.
 Here, for example, when the feed is turned off, the eluent also needs to be switched on.
 To eliminate the need to manually change all event times, dependencies can be specified.
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -284,71 +277,59 @@ _ = simulation_results.solution.column.outlet.plot()
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 ## Example 3: Load wash elute with Steric Mass Action law binding
 
 The [Steric Mass Action model](https://cadet.github.io/master/modelling/binding/steric_mass_action.html#steric-mass-action-model) takes charges of the molecules into account and is, thus, often used in ion-exchange chromatography.
 Each component has a characteristic charge $\nu$ that determines the number of available binding sites $\Lambda$ (ionic capacity) used up by a molecule.
 Due to the molecule’s shape, some additional binding sites (steric shielding factor $\sigma$) may be shielded from other molecules and are not available for binding.
 
-
-
 +++ {"slideshow": {"slide_type": "fragment"}}
+
 The model is given by this eqution:
 
 $$\frac{\mathrm{d} q_i}{\mathrm{d} t} = k_{a,i} c_{p,i}\bar{q}_0^{\nu_i} - k_{d,i} q_i c_{p,0}^{\nu_i}$$
 
 where $c_{p,0}$ denotes the mobile phase salt concentration, and
 
-
-
 +++ {"slideshow": {"slide_type": "fragment"}}
+
 $$\bar{q}_0 = \Lambda - \sum_{j=1}^{N_{\text{comp}} - 1} \left( \nu_j + \sigma_j \right) q_j$$
 
 is the number of available binding sites which is related to the number of bound salt ions.
 
-
-
 +++ {"slideshow": {"slide_type": "slide"}}
+
 Using the parameter transformation
 
 $$k_{a,i} = \tilde{k}_{a,i} q_{\text{ref}}^{-\nu_i}$$
 
 $$k_{d,i} = \tilde{k}_{d,i} c_{\text{ref}}^{-\nu_i}$$
 
-
-
 +++ {"slideshow": {"slide_type": "fragment"}}
+
 we obtain the modified model equation:
 
 $$\frac{\mathrm{d} q_i}{\mathrm{d} t} = \tilde{k}_{a,i} c_{p,i} \left(\frac{\bar{q}_0}{q_{\text{ref}}}\right)^{\nu_i} - \tilde{k}_{d,i} q_i \left(\frac{c_{p,0}}{c_{\text{ref}}}\right)^{\nu_i}$$
 
-
-
 +++ {"slideshow": {"slide_type": "fragment"}}
+
 This transformation serves as a (partial) nondimensionalization of the adsorption and desorption rates.
 
-
-
 +++ {"slideshow": {"slide_type": "fragment"}}
+
 The basic goal is to have $\left(\frac{\bar{q}_0}{q_{\text{ref}}}\right) \leq 1$ and $\left(\frac{c_{p,0}}{c_{\text{ref}}}\right) \leq 1$
 
 Recommended choices for $c_{\text{ref}}$ are the average or maximum inlet concentration of the mobile phase modifier $c_0$, and for $q_{\text{ref}}$ the ionic capacity $\Lambda$.
 Note that setting the reference concentrations to ${1.0}$ each results in the original binding model.
 
-
-
 +++ {"slideshow": {"slide_type": "slide"}}
-<div class="alert alert-info">
 
-**Note:**
-
+```{note}
 From a practical perspective, modern resins have a very high capacity and large proteins can can have a very high charactistic charge.
 If the concentration is not normalized, the system is often numerically unstable.
 It may run slowly or not at all.
-
-</div>
-
-
+```
 
 +++ {"slideshow": {"slide_type": "slide"}}
 
@@ -363,8 +344,8 @@ Finally, the protein is eluted by adding a linear salt gradient.
 
 ```
 
-
 +++
+
 First, define the `ComponentSystem` and the parameters for the `StericMassAction` model.
 As mentioned earlier, consider a reference concentration in the pore for numeric purposes.
 From the [manual](https://cadet.github.io/master/modelling/binding/reference_concentrations.html?highlight=reference):
@@ -372,7 +353,6 @@ From the [manual](https://cadet.github.io/master/modelling/binding/reference_con
 
 ***Note:*** In CADET-Process, `lambda` is a reserved keyword in Python.
 In such occasions, it is common to suffix variable names with an underscore.
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -400,9 +380,7 @@ binding_model.steric_factor = [0.0, 50.0]
 binding_model.capacity = 225.0
 ```
 
-+++
 Then, we define the system of unit operations.
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -437,9 +415,7 @@ flow_sheet.add_connection(inlet, column)
 flow_sheet.add_connection(column, outlet)
 ```
 
-+++
 The protein is loaded for $7500 s$, then there is a wash step, which takes $2000 s$, and the gradient takes another $5500 s$.
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -465,10 +441,8 @@ _ = process.add_event(
 )
 ```
 
-+++
 Finally, we set the initial conditions of the column.
 We assume, that in the beginning of the process, the stationary phase is fully loaded with  salt.
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -477,9 +451,7 @@ column.c = [180, 0]
 column.q = [binding_model.capacity, 0]
 ```
 
-+++
 Now, we run the simulation and plot the results. Because the concentration ranges are very different, we use different scales for both components.
-
 
 ```{code-cell} ipython3
 :tags: [solution]
