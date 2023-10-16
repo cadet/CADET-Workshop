@@ -104,10 +104,7 @@ Assume the following parameters:
 
 ```{code-cell} ipython3
 :tags: [solution]
----
-slideshow:
-  slide_type: fragment
----
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(1)
@@ -225,10 +222,7 @@ Assume the following parameters:
 
 ```{code-cell} ipython3
 :tags: [solution]
----
-slideshow:
-  slide_type: fragment
----
+
 from CADETProcess.processModel import ComponentSystem
 
 component_system = ComponentSystem(1)
@@ -270,10 +264,7 @@ flow_sheet.add_connection(pfr, outlet)
 
 ```{code-cell} ipython3
 :tags: [solution]
----
-slideshow:
-  slide_type: fragment
----
+
 step_size = 1e-3
 
 from CADETProcess.processModel import Process
