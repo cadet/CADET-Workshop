@@ -22,7 +22,7 @@ def run_command(command):
     return subprocess.run(command, shell=True, check=True)
 
 
-def create_solution(run=False, commit=False, push=False):
+def create_solution(run=False, commit=False, push=False, n_cores=1):
     """Create solution files.
 
     Parameters
@@ -33,6 +33,8 @@ def create_solution(run=False, commit=False, push=False):
         Commit changes.
     push : bool, optional
         Push changes to remote.
+    n_cores : int, optional
+        Number of cpu cores to use for parallelization
 
     Returns
     -------
@@ -60,10 +62,11 @@ def create_solution(run=False, commit=False, push=False):
         myst_files = list(repo_root.glob("**/*.md"))
 
         # Run jupytext for each myst file
+
         for myst_file in myst_files:
             if "README" in myst_file.as_posix():
                 continue
-            run_command(f'jupytext --to ipynb "{myst_file.as_posix()}"')
+            convert_myst_to_ipynb(myst_file.as_posix())
             os.remove(myst_file)
 
         # Find all ipynb files recursively
@@ -71,37 +74,39 @@ def create_solution(run=False, commit=False, push=False):
 
         # Run nbtb run for each ipynb file
         if run:
+            nbtoolbelt_config_path = f"{repo_root}/.nbtoolbelt.json"
             for ipynb_file in ipynb_files:
-                print(f"Running notebook {ipynb_file}")
-                run_command(f'nbtb run --config {repo_root}/.nbtoolbelt.json "{ipynb_file.as_posix()}"')
+                run_notebook(ipynb_file.as_posix(), nbtoolbelt_config_path)
+            # Parallel(n_jobs=n_cores)(
+            #     delayed(run_notebook)(ipynb_file.as_posix(), nbtoolbelt_config_path) for ipynb_file in ipynb_files
+            # )
 
         if commit:
             # Commit all changes to ipynb files
-            repo.git.add(*myst_files)
-            repo.git.add("**/*.ipynb")
-            run_command("git commit -m 'Update solution'")
+            repo.git.add(".")
+            run_command('git commit -m "Update solution"')
 
         if push:
             # Push files to remote
             run_command("git push --force-with-lease --set-upstream origin solution")
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        run_command("git restore --staged .")
-        run_command("git restore .")
-
-        raise
-
-    finally:
         # Switch back to dev
         repo.git.checkout("dev")
+
         try:
             repo.git.stash("pop")
         except git.GitCommandError:
             pass
 
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        # run_command("git restore --staged .")
+        # run_command("git restore .")
 
-def create_teaching(commit=False, push=False):
+        raise
+
+
+def create_teaching(commit=False, push=False, n_cores=1):
     """Create teaching files.
 
     Parameters
@@ -110,6 +115,8 @@ def create_teaching(commit=False, push=False):
         Commit changes.
     push : bool, optional
         Push changes to remote.
+    n_cores : int, optional
+        Number of cpu cores to use for parallelization
 
     Returns
     -------
@@ -137,22 +144,31 @@ def create_teaching(commit=False, push=False):
         myst_files = list(repo_root.glob("**/*.md"))
 
         # Run jupytext for each myst file
-        results = Parallel(n_jobs=1)(
-            delayed(run_jupytext_to_ipynb)(myst_file.as_posix()) for myst_file in myst_files)
+        # Parallel(n_jobs=n_cores)(delayed(convert_myst_to_ipynb)(myst_file.as_posix()) for myst_file in myst_files)
+        for myst_file in myst_files:
+            convert_myst_to_ipynb(myst_file.as_posix())
+
+
+        # Remove all md files except for the README file
+        for myst_file in myst_files:
+            if "README" in myst_file.as_posix():
+                continue
+            os.remove(myst_file)
 
         # Find all ipynb files recursively
         ipynb_files = list(repo_root.glob("**/*.ipynb"))
 
         # Run nbtb punch for each ipynb file
-
-        results = Parallel(n_jobs=1)(
-            delayed(punch_notebook)
-            (ipynb_file.as_posix(), f"{repo_root}/.nbtoolbelt.json") for ipynb_file in ipynb_files
-        )
+        nbtoolbelt_config_path = f"{repo_root}/.nbtoolbelt.json"
+        for ipynb_file in ipynb_files:
+            punch_notebook(ipynb_file.as_posix(), nbtoolbelt_config_path)
+        # Parallel(n_jobs=n_cores)(
+        #     delayed(punch_notebook)(ipynb_file.as_posix(), nbtoolbelt_config_path) for ipynb_file in ipynb_files
+        # )
 
         if commit:
             # Commit all changes to myst files (our source of truth)
-            repo.index.add(myst_files)
+            repo.git.add(".")
             run_command('git commit -m "Update teaching"')
 
         if push:
@@ -163,14 +179,6 @@ def create_teaching(commit=False, push=False):
         for ipynb_file in ipynb_files:
             os.remove(ipynb_file)
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        # run_command("git restore --staged .")
-        # run_command("git restore .")
-
-        raise
-
-    finally:
         # Switch back to dev
         repo.git.checkout("dev")
 
@@ -179,8 +187,15 @@ def create_teaching(commit=False, push=False):
         except git.GitCommandError as e:
             print(e)
 
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        # run_command("git restore --staged .")
+        # run_command("git restore .")
 
-def run_jupytext_to_ipynb(myst_file_path):
+        raise
+
+
+def convert_myst_to_ipynb(myst_file_path):
     """Run jupytext with --to ipynb flag on myst_file_path. Will skip README files.
 
     Parameters
@@ -195,26 +210,59 @@ def run_jupytext_to_ipynb(myst_file_path):
     if "README" in myst_file_path:
         return
     run_command(f'jupytext --to ipynb "{myst_file_path}"')
+    return
 
 
-def punch_notebook(ipynb_file_path, nbtoolbetlt_config_path):
-    """Run nbtb punch on ipynb_file_path and convert resulting ipynb file
-    back to .md myst file.
+def punch_notebook(ipynb_file_path, nbtoolbelt_config_path):
+    """Execute nbtb punch on ipynb_file_path.
 
     Parameters
     ----------
     ipynb_file_path : str
         path to myst file as posix.
 
-    nbtoolbetlt_config_path : str
-        path to .nbtoolbetlt.json config file
+    nbtoolbelt_config_path : str
+        path to .nbtoolbelt.json config file
 
     Returns
     -------
     None
     """
-    run_command(f'nbtb punch --config {nbtoolbetlt_config_path} "{ipynb_file_path}"')
+    run_command(f'nbtb punch --config {nbtoolbelt_config_path} "{ipynb_file_path}"')
+
+
+def run_notebook(ipynb_file_path, nbtoolbelt_config_path):
+    """Execute nbtb run on ipynb_file_path.
+
+    Parameters
+    ----------
+    ipynb_file_path : str
+        path to myst file as posix.
+
+    nbtoolbelt_config_path : str
+        path to .nbtoolbelt.json config file
+
+    Returns
+    -------
+    None
+    """
+    run_command(f'nbtb run --config {nbtoolbelt_config_path} "{ipynb_file_path}"')
+
+
+def convert_ipynb_to_myst_md(ipynb_file_path):
+    """Convert ipynb file to .md myst file.
+
+    Parameters
+    ----------
+    ipynb_file_path : str
+        path to myst file as posix.
+
+    Returns
+    -------
+    None
+    """
     run_command(f'jupytext --to md:myst "{ipynb_file_path}"')
+
 
 def main():
     """Run post-commit tasks based on command-line arguments.
@@ -227,13 +275,14 @@ def main():
     parser.add_argument('--run', action='store_true', help='Run nbtb on notebooks.')
     parser.add_argument('--commit', action='store_true', help='Commit changes.')
     parser.add_argument('--push', action='store_true', help='Push changes to remote.')
+    parser.add_argument('--n_cores', help='Number of cores to use.')
 
     args = parser.parse_args()
 
     args.run = False
 
-    create_solution(args.run, args.commit, args.push)
-    create_teaching(args.commit, args.push)
+    create_solution(args.run, args.commit, args.push, args.n_cores)
+    create_teaching(args.commit, args.push, args.n_cores)
 
 
 if __name__ == "__main__":
