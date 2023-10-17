@@ -16,20 +16,34 @@ kernelspec:
 
 # Simple Chromatographic Processes
 
-Chromatography is a thermal separation technique for the separation of mixtures dissolved in a fluid called the mobile phase, which carries the gasous or liquid mixture through a structure holding another material, called the stationary phase.
++++ {"slideshow": {"slide_type": "fragment"}}
+
+Liquid chromatography is a technique for the separation of mixtures dissolved in a fluid. That fluid is called the mobile phase, which carries the mixture through a structure holding another material, called the stationary phase.
 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
-The various constituents of the mixture travel at different speeds, causing them to separate.
-The separation itself is based on different partitioning between the mobile and stationary phases.
+The various components of the mixture interact with different strengths with the stationary phase. Therefore they travel at different speeds, causing them to separate.
 
-Different mechanisms can be used for the separation, e.g. adsorption, ion exchange, size exclusion to achieve high purities separations of multicomponent mixtures.
+Different mechanisms can be used for the separation:
+ - adsorption,
+ - ion exchange,
+ - hydrophobic interactions,
+ - size exclusion,
+ - etc.
+
 For each mechanism, various stationary phases are available.
 
 +++ {"slideshow": {"slide_type": "slide"}}
 
-Generally, chromatographic models are used for optimization of preparative processes.
-In contrast to analytical chromatography, which serves to identify or quantify analytes in a mixture, the purpose of preparative chromatography, is the isolation and purification of sufficient quantities of a specific substance for further use.
+There are broadly speaking, _two_ types of chromatography:
+
+__Preparative__ and __analytical__
+
+_Preparative_ targets isolation and purification of "large" quantities of a substance.
+
+_Analytical_ serves to identify or quantify analytes in a mixture.
+
+Generally, chromatographic models are used for optimization of _preparative_ processes.
 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
@@ -52,8 +66,15 @@ In this exercise, we will consider the following system:
 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
-Before considering 'real' chromatography, we will model a simple experiment meant to find the porosity and axial dispersion of a column by sending a dextran pulse through the column.
-There will be no binding or pore penetration considered yet.
+Simplify the model by using a large, inert molecule:
+- exclude pore access
+    - no pore porosity
+    - no diffusion parameters
+- exclude binding
+    - no binding parameters
+
+Only:
+the __bed porosity__ and __axial dispersion__ affect the Dextran pulse.
 
 +++ {"slideshow": {"slide_type": "slide"}}
 
@@ -61,13 +82,13 @@ For the column, assume the following parameters which are usually provided by th
 - length: $0.1~m$
 - diameter: $0.01~m$
 - particle radius: $4.5 \cdot 10^{-5}~m$
-- particle porosity: $0.33$
+- flow rate: $10^{-6}/60~m^3 s^{-1}$
 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
 Moreover, since Dextran does not penetrate pores, the film diffusion coefficient can be set to $0~m \cdot s^{-1}$.
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "fragment"}}
 
 Finally, bed porosity and axial dispersion need to be specified.
 Usually, these parameters will be estimated using an inverse method (see later tutorials).
@@ -87,6 +108,7 @@ component_system = ComponentSystem(['Dextran'])
 
 inlet = Inlet(component_system, 'inlet')
 inlet.flow_rate = 1e-6/60
+inlet.c = [0]
 
 column = LumpedRateModelWithPores(component_system, 'column')
 column.length = 0.1
@@ -151,6 +173,13 @@ For the Langmuir isotherm, use the following parameters:
 - desorption rate: $[1, 1]~s^{-1}$
 - binding capacity: $[100, 100]~mM$
 
+additionally, use these transport parameters:
+
+- particle porosity: $0.33$
+- film diffusion: $10^{-4}$
+
+This time, use two `Inlet UnitOperations`, a feed `Inlet` with a concentration of $10 ~mM$ for both components and an eluent `Inlet` with a concentration of $0~mM$.
+
 ```{code-cell} ipython3
 :tags: [solution]
 
@@ -208,7 +237,7 @@ flow_sheet.add_connection(column, outlet)
 
 +++ {"slideshow": {"slide_type": "slide"}}
 
-Again, we create two sections to model the injections.
+Again, we create two sections to model the injections. This time by turning off the flow rate of the feed `Inlet` and turning on the flow rate of the eluent `Inlet`.
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -234,7 +263,7 @@ process.cycle_time = 1200
 
 Often, multiple `Events` happen simulateneously.
 Here, for example, when the feed is turned off, the eluent also needs to be switched on.
-To eliminate the need to manually change all event times, dependencies can be specified.
+To eliminate the need to manually change all event times, dependencies can be specified using `add_event_dependency`.
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -244,11 +273,12 @@ process = Process(flow_sheet, 'batch elution')
 
 ## Create Events and Durations
 Q = 1e-6/60
-process.add_event('feed_on', 'flow_sheet.feed.flow_rate', Q, 0)
+process.add_event(name='feed_on', parameter_path='flow_sheet.feed.flow_rate', state=Q, time=0)
 process.add_event('feed_off', 'flow_sheet.feed.flow_rate', 0.0, 60)
 
-process.add_event('eluent_on', 'flow_sheet.eluent.flow_rate', Q)
-process.add_event_dependency('eluent_on', ['feed_off'])
+process.add_event(name='eluent_on', parameter_path='flow_sheet.eluent.flow_rate', state=Q)
+process.add_event_dependency("eluent_on", ["feed_off"])
+
 process.add_event('eluent_off', 'flow_sheet.eluent.flow_rate', 0.0)
 process.add_event_dependency('eluent_off', ['feed_on'])
 
@@ -296,7 +326,7 @@ where $c_{p,0}$ denotes the mobile phase salt concentration, and
 
 $$\bar{q}_0 = \Lambda - \sum_{j=1}^{N_{\text{comp}} - 1} \left( \nu_j + \sigma_j \right) q_j$$
 
-is the number of available binding sites which is related to the number of bound salt ions.
+is the number of available binding sites.
 
 +++ {"slideshow": {"slide_type": "slide"}}
 
@@ -323,7 +353,7 @@ The basic goal is to have $\left(\frac{\bar{q}_0}{q_{\text{ref}}}\right) \leq 1$
 Recommended choices for $c_{\text{ref}}$ are the average or maximum inlet concentration of the mobile phase modifier $c_0$, and for $q_{\text{ref}}$ the ionic capacity $\Lambda$.
 Note that setting the reference concentrations to ${1.0}$ each results in the original binding model.
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "fragment"}}
 
 ```{note}
 From a practical perspective, modern resins have a very high capacity and large proteins can can have a very high charactistic charge.
@@ -334,25 +364,21 @@ It may run slowly or not at all.
 +++ {"slideshow": {"slide_type": "slide"}}
 
 In this example, we will look at a typical process for protein purification.
-First, protein which is in a mixture with salt is loaded on the column and binds to the resin.
-Then, the column is washed with a lower concentrated salt solution.
-Finally, the protein is eluted by adding a linear salt gradient.
+
+1. First, a protein salt mixture is loaded on the column and binds to the resin.
+2. Then, the column is washed with a lower concentrated salt solution.
+3. Finally, the protein is eluted by adding a linear salt gradient.
 
 ```{figure} ./resources/lwe_inlet.png
-:width: 50%
+:width: 80%
 :align: center
 
 ```
 
-+++
++++ {"slideshow": {"slide_type": "fragment"}}
 
 First, define the `ComponentSystem` and the parameters for the `StericMassAction` model.
 As mentioned earlier, consider a reference concentration in the pore for numeric purposes.
-From the [manual](https://cadet.github.io/master/modelling/binding/reference_concentrations.html?highlight=reference):
-> Recommended choices for the reference concentration are the average or maximum inlet concentration of the mobile phase modifier for `c0`, and the ionic capacity Λ for `qref`.
-
-***Note:*** In CADET-Process, `lambda` is a reserved keyword in Python.
-In such occasions, it is common to suffix variable names with an underscore.
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -415,6 +441,8 @@ flow_sheet.add_connection(inlet, column)
 flow_sheet.add_connection(column, outlet)
 ```
 
++++ {"slideshow": {"slide_type": "fragment"}}
+
 The protein is loaded for $7500 s$, then there is a wash step, which takes $2000 s$, and the gradient takes another $5500 s$.
 
 ```{code-cell} ipython3
@@ -441,6 +469,8 @@ _ = process.add_event(
 )
 ```
 
++++ {"slideshow": {"slide_type": "fragment"}}
+
 Finally, we set the initial conditions of the column.
 We assume, that in the beginning of the process, the stationary phase is fully loaded with  salt.
 
@@ -450,6 +480,8 @@ We assume, that in the beginning of the process, the stationary phase is fully l
 column.c = [180, 0]
 column.q = [binding_model.capacity, 0]
 ```
+
++++ {"slideshow": {"slide_type": "fragment"}}
 
 Now, we run the simulation and plot the results. Because the concentration ranges are very different, we use different scales for both components.
 

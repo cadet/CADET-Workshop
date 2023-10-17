@@ -14,13 +14,15 @@ kernelspec:
 
 # Adsorption models
 
-At the core of chromatographic processes are interactions between the components we want to separate and a stationary phase.
+At the core of chromatographic processes are interactions between the components we want to separate and a stationary
+phase.
 
 These components can be: atoms, ions or molecules of a gas, liquid or dissolved solids.
 
-+++ {"slideshow": {"slide_type": "subslide"}}
++++ {"slideshow": {"slide_type": "slide"}}
 
 ## Isotherms
+
 These interactions can often be described in terms of an isotherm:
 
 ```{note}
@@ -39,7 +41,7 @@ Valid for a constant _temperature_ (iso - _therm_).
 :align: center
 ```
 
-+++ {"slideshow": {"slide_type": "subslide"}}
++++ {"slideshow": {"slide_type": "slide"}}
 
 In CADET, many different models for adsorption are implemented.
 All of the models can be modelled kinetically or in rapid equilibrium.
@@ -55,6 +57,7 @@ Moreover, many of them include features such as competitive effects, multi state
 +++ {"slideshow": {"slide_type": "fragment"}}
 
 **In this lesson,** we will:
+
 - Learn about different adsorption models.
 - Associate adsorption models with different unit operations.
 
@@ -64,12 +67,14 @@ Moreover, many of them include features such as competitive effects, multi state
 
 The simplest model for adsorption is the [linear model](https://cadet.github.io/master/modelling/binding/linear.html).
 
-Analogously to Henry's law, it describes a linear correlation between the solved concentration and the bound concentration of the component.
+Analogously to Henry's law, it describes a linear correlation between the solved concentration and the bound
+concentration of the component.
 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
 Let us consider a shaking flask experiment in a `CSTR` (without ingoing or outgoing streams).
 In it, we add some porous material s.t.
+
 - the overal porosity is $0.5$.
 - the volume is $1~L$
 
@@ -97,7 +102,7 @@ binding_model.adsorption_rate = [2]
 binding_model.desorption_rate = [1]
 ```
 
-+++ {"slideshow": {"slide_type": "subslide"}}
++++ {"slideshow": {"slide_type": "slide"}}
 
 Now create the UnitOperation `Cstr` with a porosity of 0.5 and a volume of 1 L.
 
@@ -119,14 +124,19 @@ reactor.V = 1e-3
 Let's also initialize our `Cstr` with a component concentration of $1~mol \cdot L^{-1}$.
 
 ```{code-cell} ipython3
+:tags: [solution]
+
 reactor.c = [1]
 ```
 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
-We care about the concentration of our component in the solid and bulk liquid phase, so let's tell the reactor to write down those concentrations.
+We care about the concentration of our component in the solid and bulk liquid phase, so let's tell the reactor to write
+down those concentrations.
 
 ```{code-cell} ipython3
+:tags: [solution]
+
 reactor.solution_recorder.write_solution_bulk = True
 reactor.solution_recorder.write_solution_solid = True
 ```
@@ -169,6 +179,7 @@ _ = sim_results.solution.reactor.solid.plot()
 +++ {"slideshow": {"slide_type": "slide"}}
 
 ### A note on resolution
+
 As can be seen in the figure abore, the time resolution is not sufficiently high.
 By default, CADET-Process stores 1 sample per second.
 To increase the resolution, set the `time_resolution` parameter of the `Simulator`.
@@ -197,9 +208,8 @@ _ = sim_results.solution.reactor.solid.plot()
 
 ## Example 2: Linear adsorption model with linear concentration gradient
 
-To plot the solid phase concentration as a function of the bulk concentration, we can introduce a linear concentration gradient to the `CSTR` that has an initial concentration of $0~mM$.
-For this purpose, we will make use of the `flowrate_filter` function of the `CSTR` (see [here](https://cadet.github.io/master/interface/unit_operations/cstr.html)).
-This way, we can add mass (or particles) to the tank without increasing it's volume.
+To plot the solid phase concentration as a function of the bulk concentration, we can introduce a linear concentration
+gradient to the `CSTR` that has an initial concentration of $0~mM$.
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -294,17 +304,22 @@ ax.set_ylabel('$c_{solid}$')
 ## Example 3: Multi component Langmuir model
 
 Usually, the linear isotherm can only be assumed for very low solute concentrations.
-At higher, higher concentrations the limited number of available binding sites on the surface of the adsorbent also needs to be considered which the [Langmuir equation](https://cadet.github.io/master/modelling/binding/multi_component_langmuir.html) takes into account.
+At higher, higher concentrations the limited number of available binding sites on the surface of the adsorbent also
+needs to be considered which
+the [Langmuir equation](https://cadet.github.io/master/modelling/binding/multi_component_langmuir.html) takes into
+account.
 
 $$q = q_{sat} \cdot \frac{b \cdot c}{1 + b \cdot c} = \frac{a \cdot c}{1 + b \cdot c}$$
 
 ***with:***
-> $q_{Sat}$: saturation loading
-> $b$ = equilibrium factor
+
+- $q_{Sat}$ = saturation loading
+- $b$ = equilibrium factor
 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
 ***Assumptions:***
+
 - All of the adsorption sites are equivalent, and each site can only accommodate one molecule
 - The surface is energetically homogeneous
 - Adsorbed molecules do not interact
@@ -338,7 +353,7 @@ binding_model.desorption_rate = [1,1]
 binding_model.capacity = [1,1]
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "fragment"}}
 
 Set up the `processModel`
 
@@ -363,7 +378,7 @@ reactor.solution_recorder.write_solution_bulk = True
 reactor.solution_recorder.write_solution_solid = True
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "fragment"}}
 
 Set up the `FlowSheet`
 
@@ -380,7 +395,7 @@ flow_sheet.add_unit(inlet)
 flow_sheet.add_connection(inlet,reactor)
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "fragment"}}
 
 Create a `Process`
 
@@ -393,7 +408,7 @@ process = Process(flow_sheet, 'process')
 process.cycle_time = 10
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "fragment"}}
 
 Create a `Simulator` and simulate
 
@@ -411,7 +426,7 @@ sim_results = simulator.run(process)
 _ = sim_results.solution.reactor.outlet.plot()
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "fragment"}}
 
 Plot the solutions
 

@@ -12,11 +12,10 @@ kernelspec:
   name: python3
 ---
 
-+++
 # Chromatographic Processes - Exercise
 
-
 +++
+
 ## Exercise 1: Combine nonbinding tracer with binding components
 
 From the tutorial, combine the dextran pulse with the langmuir experiment.
@@ -25,7 +24,6 @@ Then, start modifying:
 - Adsorption parameters
 - Transport parameters
 - Flow Rates
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -87,6 +85,7 @@ _ = simulation_results.solution.column.outlet.plot()
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 ## Exercise 2: Multiple injections
 
 For some processes, multiple injections onto a column in sequence.
@@ -94,7 +93,6 @@ Take the previous example and create an inlet profile with three injections.
 For this purpose, the `Simulator` can automatically run multiple simulations by setting `n_cycles`.
 
 ***Task:*** Try finding the best interval (cycle time) s.t. the column is used most efficiently.
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -141,7 +139,7 @@ flow_sheet.add_connection(inlet, column)
 flow_sheet.add_connection(column, outlet)
 
 process = Process(flow_sheet, 'dextran')
-process.cycle_time = 350
+process.cycle_time = 5*60
 
 process.add_event('inject_on', 'flow_sheet.inlet.c', [1.0, 1.0], 0)
 process.add_event('inject_off', 'flow_sheet.inlet.c', [0.0, 0.0], 50.0)
@@ -156,13 +154,13 @@ _ = simulation_results.solution.column.outlet.plot()
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 ## Example 3: Load wash elute with three components
 
 Add a second protein component to the LWE example from the tutorial lesson.
 Assume that all parameters are the same as the first protein, only change:
 - adsorption rate: $0.3~m^{3}_{MP}m^{-3}_{SP}s^{-1}$
 - characteristic charge: $5.0$
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -232,7 +230,7 @@ concentration_difference = np.array([500.0, 0.0]) - np.array([70.0, 0.0])
 gradient_duration = process.cycle_time - gradient_start
 gradient_slope = concentration_difference/gradient_duration
 
-_ = process.add_event('load', 'flow_sheet.inlet.c', [180.0, 0.0, 0.1])
+_ = process.add_event('load', 'flow_sheet.inlet.c', [180.0, 0.1, 0.1])
 _ = process.add_event('wash', 'flow_sheet.inlet.c', [70.0, 0.0, 0.0], wash_start)
 _ = process.add_event(
     'grad_start',
@@ -255,4 +253,8 @@ sec.components = ["Salt"]
 sec.y_label = '$c_{salt}$'
 
 _ = simulation_results.solution.column.outlet.plot(secondary_axis=sec)
+```
+
+```{code-cell} ipython3
+
 ```
