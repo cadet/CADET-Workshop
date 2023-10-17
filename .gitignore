@@ -8,3 +8,4 @@ diskcache_*
 results_*
 *.egg-info
 .idea
+tests/tmp*
