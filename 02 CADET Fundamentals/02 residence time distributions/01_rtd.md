@@ -260,7 +260,6 @@ flow_sheet.add_connection(inlet, pfr)
 flow_sheet.add_connection(pfr, outlet)
 ```
 
-+++ {"slideshow": {"slide_type": "fragment"}}
 ```{code-cell} ipython3
 tags: [solution]
 
@@ -290,7 +289,7 @@ simulation_results.solution.pfr.inlet.plot()
 simulation_results.solution.pfr.outlet.plot()
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "fragment"}}
 
 ```{warning}
 Because of numerical dispersion, solvers like CADET are not suited to simulate stiff systems like the one presented.

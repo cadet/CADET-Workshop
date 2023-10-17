@@ -213,6 +213,8 @@ _ = process.add_event('start load', 'flow_sheet.inlet.c', [1], 0)
 _ = process.add_event('start wash', 'flow_sheet.inlet.c', [0], 60)
 ```
 
++++ {"slideshow": {"slide_type": "fragment"}}
+
 All events can are stored in the events attribute. To visualize the trajectory of the parameter state over the entire cycle, the Process provides a `plot_events()` method.
 
 ```{code-cell} ipython3
