@@ -261,7 +261,7 @@ flow_sheet.add_connection(pfr, outlet)
 ```
 
 ```{code-cell} ipython3
-tags: [solution]
+:tags: [solution]
 
 step_size = 1e-3
 
