@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 from abc import abstractmethod
 from pathlib import Path
 import subprocess
@@ -7,6 +8,28 @@ import git
 
 from joblib import Parallel, delayed
 import pathos
+
+
+def on_error(func, path, exc_info):
+    """
+    Error handler for ``shutil.rmtree``.
+
+    If the error is due to an access error (read only file)
+    it attempts to add write permission and then retries.
+
+    If the error is for another reason it re-raises the error.
+
+    Taken from StackOverflow
+
+    Usage : ``shutil.rmtree(path, onerror=onerror)``
+    """
+    import stat
+    # Is the error an access error?
+    if not os.access(path, os.W_OK):
+        os.chmod(path, stat.S_IWUSR)
+        func(path)
+    else:
+        raise
 
 
 class ParallelizationBase:
@@ -359,6 +382,55 @@ def convert_ipynb_to_myst_md(ipynb_file_path):
     None
     """
     return run_command(f'jupytext --to md:myst "{ipynb_file_path}"')
+
+
+def setup_teaching_copy(new_repo_dir="CADET-Workshop-teaching"):
+    """Create a copy of this directory and check out the teaching branch in it
+
+    Parameters
+    ----------
+    new_repo_dir : str
+        Name for the new repo folder.
+
+    Returns
+    -------
+
+    """
+
+    repo = git.Repo(search_parent_directories=True)
+
+    # Get the root directory of this repo
+    repo_root = Path(repo.working_tree_dir)
+
+    # Get the directory in which this repo lives
+    parent_dir = os.path.split(repo_root)[0]
+
+    os.chdir(parent_dir)
+
+    # Clean up folder if it exists
+    if os.path.exists(new_repo_dir):
+        delete_dir_contents(new_repo_dir)
+
+    # Clone from this repo to new repo
+    new_repo = git.Repo.clone_from(repo_root, new_repo_dir)
+
+    new_repo.git.checkout("teaching")
+
+
+def delete_dir_contents(dir_path):
+    """Delete all contents of a directory but leave the directory itself.
+
+    Parameters
+    ----------
+    dir_path : str | Path
+        Path to directory to empty.
+
+    Returns
+    -------
+    None
+    """
+    for item in os.listdir(dir_path):
+        shutil.rmtree(item, onerror=on_error)
 
 
 def main(**kwargs):
