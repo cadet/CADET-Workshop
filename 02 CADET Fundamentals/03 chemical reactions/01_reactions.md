@@ -29,6 +29,7 @@ In this tutorial, we're going to learn how to setup:
 - Equilibrium Reactions
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 ## Forward Reactions
 As a simple example, consider the following system:
 

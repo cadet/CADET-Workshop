@@ -14,8 +14,6 @@ kernelspec:
 
 # Residence time distributions
 
-The residence time is a measure of the time material spends in a volume through which it flows. Molecules or small volume elements have a single residence time, but more complex systems have a characteristic residence time distribution (RTD).
-
 Basic residence time theory treats a system with an input and an output. The residence time of a small particle is the time between entering and leaving the system.
 
 ```{figure} ./resources/system.png
@@ -23,12 +21,12 @@ Basic residence time theory treats a system with an input and an output. The res
 :align: center
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "fragment"}}
 
 The residence time distribution can be described with the function $E(t)$ which has the properties of a probability distribution:
 $$E(t) \ge 0~\text{and}~\int_0^\infty E(t)~dt = 1$$
 
-+++ {"slideshow": {"slide_type": "fragment"}}
++++ {"slideshow": {"slide_type": "slide"}}
 
 Residence time distributions are measured by introducing a non-reactive tracer into the system at the inlet:
 1. Change input concentration according to a known function (e.g. Dirac $\delta$-function or step function)
@@ -39,7 +37,7 @@ Residence time distributions are measured by introducing a non-reactive tracer i
 
 For some simple systems (e.g. CSTR and Plug flow reactor model) analytic solutions exist and we can compare them with the simulations of CADET.
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++
 
 **In this lesson, we will:**
 - Learn about system responses.
@@ -319,7 +317,7 @@ However, we are in the process of implementing a new method, the *Discontinuous 
 pfr.discretization
 ```
 
-+++ {"slideshow": {"slide_type": "fragment"}}
++++ {"slideshow": {"slide_type": "slide"}}
 
 ### High discretization
 
@@ -331,7 +329,7 @@ simulation_results = simulator.simulate(process)
 simulation_results.solution.pfr.outlet.plot()
 ```
 
-+++ {"user_expressions": []}
++++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
 
 ### Low discretization
 

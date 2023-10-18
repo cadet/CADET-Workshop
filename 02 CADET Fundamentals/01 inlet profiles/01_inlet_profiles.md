@@ -32,17 +32,19 @@ In this lesson, we will:
 In a first example, we will look at a simple system with just two unit operations, an [Inlet](https://cadet-process.readthedocs.io/en/latest/reference/generated/CADETProcess.processModel.Inlet.html), and an [Outlet](https://cadet-process.readthedocs.io/en/latest/reference/generated/CADETProcess.processModel.Outlet.html).
 
 ```{figure} ./resources/IO.png
+:width: 30%
 ```
 
 We will introduce flow from the `Inlet` to the `Outlet` with a constant flow rate of $Q = 1~mL \cdot s^{-1}$.
 In the first section, the concentration is $1.0~mM$, and after $1~min$, it is changed to $0.0~mM$.
 
 ```{figure} ./resources/step.png
+:width: 30%
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
 
-### 1. Setting up the model
+## 1. Setting up the model
 
 Before we start with specifying the system, we define some local auxiliary variables.
 Note that we have to convert all units to SI units.
@@ -57,12 +59,10 @@ However, we strongly recommend converting everything to the SI system.
 
 #### Component System
 
-First, a `ComponentSystem` needs to be created.
-The `ComponentSystem` ensures that all parts of the process have the same number of components.
-Moreover, components can be named which automatically adds legends to the plot methods.
-For advanced use, see [here](https://cadet-process.readthedocs.io/en/latest/reference/process_model/component_system.html).
+- `ComponentSystem` ensure that all parts of the process have the same number of components.
+- Components can be named which automatically adds legends to the plot methods.
 
-In this case, it is simple to setup; only the number of components needs to be specified.
+For advanced use, see [here](https://cadet-process.readthedocs.io/en/latest/reference/process_model/component_system.html).
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -72,34 +72,28 @@ from CADETProcess.processModel import ComponentSystem
 component_system = ComponentSystem(1)
 ```
 
-Alternatively, pass a list of strings for the component names in the constructor:
-
-```{code-cell} ipython3
-:tags: [solution]
-
-component_system = ComponentSystem(['A'])
-```
-
 +++ {"slideshow": {"slide_type": "slide"}}
 
-#### Unit Operations
+## Unit Operations
 
-Now, the unit operation models are instantiated.
 For an overview of all models in CADET-Process, see [here](https://cadet-process.readthedocs.io/en/latest/reference/process_model/unit_operation_models.html).
 
-To instantiate a unit, it requires the component system, as well as a unique name.
+Unit operations require:
+- the `ComponentSystem`
+- as a unique name.
+
 Note that the name string passed in the constructor is later used to reference the unit in the flow sheet for setting `Events` and `OptimizationVariables`.
 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
-##### Inlet
+## Inlet
 
 In CADET, the `Inlet` pseudo unit operation serves as source for the system and is used to create arbitary concentration profiles as boundary conditions (see also [here](https://cadet-process.readthedocs.io/en/latest/reference/generated/CADETProcess.processModel.Inlet.html)).
 
-The concentration profile is described using a third degree piecewise polynomial for each component.
-Later, we will define the pieces, when we look at events.
-Similarly, the flow rate can be expressed as a third degree piecewise polynomial.
-Since the flow rate is constant, we can directly set the parameter on the object.
+- Concentration profiles are described using a third degree piecewise polynomial for each component.
+- Flow rate can be expressed as a third degree piecewise polynomial.
+
+Here, the flow rate is constant, we can directly set the parameter on the object.
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -109,6 +103,8 @@ from CADETProcess.processModel import Inlet
 inlet = Inlet(component_system, 'inlet')
 inlet.flow_rate = 1e-6
 ```
+
++++ {"slideshow": {"slide_type": "fragment"}}
 
 Note that every unit operation model has different model parameters.
 To display all parameters, simply print the `parameters` attribute.
@@ -121,7 +117,7 @@ print(inlet.parameters)
 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
-##### Outlet
+## Outlet
 The `Outlet` is another pseudo unit operation that serves as sink for the system (see also [here](https://cadet.github.io/master/modelling/unit_operations/outlet)).
 
 ```{code-cell} ipython3
@@ -144,9 +140,11 @@ print(outlet.parameters)
 
 +++ {"slideshow": {"slide_type": "slide"}}
 
-#### Setting up FlowSheet
+## Flow Sheet Connectivity
 
-To represent the flow between different unit operations, a `FlowSheet` object is initiated. All units need to be added and then connected accordingly. For more information, see also [here](https://cadet-process.readthedocs.io/en/latest/reference/process_model/flow_sheet.html).
+The `FlowSheet` stores the connectivity between different unit operations.
+
+For more information, see also [here](https://cadet-process.readthedocs.io/en/latest/reference/process_model/flow_sheet.html).
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -163,13 +161,11 @@ flow_sheet.add_connection(inlet, outlet)
 
 +++ {"slideshow": {"slide_type": "slide"}}
 
-#### Define Dynamic Events in Process
+## Dynamic Events in Process
 
-The `Process` class is used to define dynamic changes of model parameters or flow sheet connections.
-To instantiate a `Process`, a `FlowSheet` needs to be passed as argument, as well as a string to name that process.
-After instantiation, it is important to also set the overall duration of the process.
-Since CADET-Process is also designed for cyclic processes, the corresponding attribute is called `cycle_time`.
-For more information, see also [here](https://cadet.github.io/master/modelling/unit_operations/outlet).
+Dynamic changes of model parameters or flow sheet connections are configure in `Process` class.
+
+For more information, see also [here](https://cadet-process.readthedocs.io/en/latest/user_guide/process_model/process.html).
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -196,7 +192,7 @@ To display all time dependent parameters of an object, use the `section_dependen
 print(inlet.section_dependent_parameters)
 ```
 
-+++ {"slideshow": {"slide_type": "notes"}}
++++ {"slideshow": {"slide_type": "fragment"}}
 
 Note that also flow sheet connectivity can be added as events. More on that later.
 
@@ -252,6 +248,8 @@ To check that everything works correctly, you can call the check_cadet method:
 
 process_simulator.check_cadet()
 ```
+
++++ {"slideshow": {"slide_type": "fragment"}}
 
 Now, run the simulation:
 
