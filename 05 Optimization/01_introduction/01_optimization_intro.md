@@ -202,7 +202,7 @@ More on generating initial values later.
 ```{code-cell} ipython3
 :tags: [solution]
 
-optimization_results = optimizer.optimize(optimization_problem, x0=1)
+optimization_results = optimizer.optimize(optimization_problem, x0=1, log_level="WARNING")
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
@@ -238,9 +238,13 @@ Note that by default the values are plotted on a log scale if they span many ord
 To disable this, set `autoscale=False`.
 
 ```{code-cell} ipython3
+optimization_results.plot_corner()
+```
+
+```{code-cell} ipython3
 :tags: [solution]
 
-optimization_results.plot_objectives(autoscale=True)
+optimization_results.plot_objectives(autoscale=False)
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
@@ -497,8 +501,8 @@ To create initial values, call `create_initial_values` and specify the number of
 By default, a random value is returned which fulfills all bound constraints and linear constraints.
 
 ```{code-cell} ipython3
-if rosenbrock_problem.n_linear_equality_constraints > 0:
-    rosenbrock_problem.remove_linear_equality_constraint(0) # just for demonstration purposes
+#if rosenbrock_problem.n_linear_equality_constraints > 0:
+#    rosenbrock_problem.remove_linear_equality_constraint(0) # just for demonstration purposes
 ```
 
 ```{code-cell} ipython3
@@ -541,4 +545,10 @@ def plot_initial_values(x0):
 
 x0 = rosenbrock_problem.create_initial_values(500)
 plot_initial_values(x0)
+#for x in x0:
+#    print(rosenbrock_problem.check_linear_equality_constraints(x))
+```
+
+```{code-cell} ipython3
+
 ```

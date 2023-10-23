@@ -30,6 +30,13 @@ from examples.load_wash_elute.lwe_flow_rate import process
 ```{code-cell} ipython3
 :tags: [solution]
 
+
+```
+
+```{code-cell} ipython3
+:tags: [solution]
+
+from examples.load_wash_elute.lwe_flow_rate import process
 from CADETProcess.simulator import Cadet
 
 simulator = Cadet()
@@ -42,16 +49,17 @@ sec.components = ['Salt']
 sec.y_label = '$c_{salt}$'
 
 simulation_results.solution.outlet.inlet.plot(secondary_axis=sec)
-```
-
-```{code-cell} ipython3
-:tags: [solution]
 
 from CADETProcess.fractionation import Fractionator
 fractionator = Fractionator(simulation_results)
 
 fractionator.add_fractionation_event('start_C', 2, 5*60)
 fractionator.add_fractionation_event('end_C', -1, 8*60)
+
+from CADETProcess.plotting import SecondaryAxis
+sec = SecondaryAxis()
+sec.components = ['Salt']
+sec.y_label = '$c_{salt}$'
 
 fractionator.plot_fraction_signal(secondary_axis=sec)
 fractionator.performance
@@ -82,4 +90,8 @@ fractionator = fractionation_optimizer.optimize_fractionation(
 )
 print(fractionator.performance)
 _ = fractionator.plot_fraction_signal()
+```
+
+```{code-cell} ipython3
+
 ```
