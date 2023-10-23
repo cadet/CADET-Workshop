@@ -9,3 +9,4 @@ results_*
 *.egg-info
 .idea
 tests/tmp*
+setup-miniconda-patched-environment.yml

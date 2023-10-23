@@ -119,7 +119,9 @@ def run_command(command):
     return subprocess.run(command, shell=True, check=True)
 
 
-def create_solution(run=False, commit=False, push=False, n_cores=1, on_fail_restore_dev=False):
+def create_solution(run=False, commit=False, push=False, n_cores=1, on_fail_restore_dev=False, base_branch="dev",
+                    target_branch="solution"
+                    ):
     """Create solution files.
 
     Parameters
@@ -134,6 +136,10 @@ def create_solution(run=False, commit=False, push=False, n_cores=1, on_fail_rest
         Number of cpu cores to use for parallelization
     on_fail_restore_dev : bool, optional
         Reset the repo to dev on failure.
+    base_branch : str, optional
+        Branch on which these actions are based. If git is not currently on this branch: abort script.
+    target_branch : str, optional
+        Name for the newly created branch.
 
     Returns
     -------
@@ -143,19 +149,16 @@ def create_solution(run=False, commit=False, push=False, n_cores=1, on_fail_rest
     current_branch = repo.active_branch.name
     repo_root = Path(repo.working_tree_dir)  # Gets the root directory of the repo
 
-    if current_branch != "dev":
-        print("Not on dev branch. Skipping create_solution script.")
+    if current_branch != base_branch:
+        print(f"Not on {base_branch} branch. Skipping create_solution script.")
         return
 
     try:
-        # Stash everything
-        run_command("git stash")
-
         # Checkout the 'solution' branch
-        repo.git.checkout("solution")
+        repo.git.checkout(target_branch)
 
-        # Reset to `dev`
-        run_command("git reset --hard dev")
+        # Reset to base_branch
+        run_command(f"git reset --hard {base_branch}")
 
         # Find all myst files recursively
         myst_files = list(repo_root.glob("**/*.md"))
@@ -185,19 +188,14 @@ def create_solution(run=False, commit=False, push=False, n_cores=1, on_fail_rest
         if commit:
             # Commit all changes to ipynb files
             repo.git.add(".")  # Less error-prone than working with path lists
-            run_command('git commit -m "Update solution"')
+            run_command(f'git commit -m "Update {target_branch}"')
 
         if push:
             # Push files to remote
-            run_command("git push --force-with-lease --set-upstream origin solution")
+            run_command(f"git push --force --set-upstream origin {target_branch}")
 
-        # Switch back to dev
-        repo.git.checkout("dev")
-
-        try:
-            repo.git.stash("pop")
-        except git.GitCommandError as e:
-            print(e)
+        # Switch back to base_branch
+        repo.git.checkout(base_branch)
 
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -206,8 +204,8 @@ def create_solution(run=False, commit=False, push=False, n_cores=1, on_fail_rest
             run_command("git restore --staged .")
             run_command("git restore .")
 
-            # Switch back to dev
-            repo.git.checkout("dev")
+            # Switch back to base_branch
+            repo.git.checkout(base_branch)
 
             try:
                 repo.git.stash("pop")
@@ -217,7 +215,8 @@ def create_solution(run=False, commit=False, push=False, n_cores=1, on_fail_rest
         raise
 
 
-def create_teaching(commit=False, push=False, n_cores=1, on_fail_restore_dev=False):
+def create_teaching(commit=False, push=False, n_cores=1, on_fail_restore_dev=False, base_branch="dev",
+                    target_branch="teaching"):
     """Create teaching files.
 
     Parameters
@@ -239,19 +238,16 @@ def create_teaching(commit=False, push=False, n_cores=1, on_fail_restore_dev=Fal
     current_branch = repo.active_branch.name
     repo_root = Path(repo.working_tree_dir)  # Gets the root directory of the repo
 
-    if current_branch != "dev":
-        print("Not on dev branch. Skipping create_solution script.")
+    if current_branch != base_branch:
+        print(f"Not on {base_branch} branch. Skipping create_teaching script.")
         return
 
     try:
-        # Stash everything
-        run_command("git stash")
-
         # Checkout the 'teaching' branch
-        repo.git.checkout("teaching")
+        repo.git.checkout(target_branch)
 
-        # Reset to `dev`
-        run_command("git reset --hard dev")
+        # Reset to base_branch
+        run_command(f"git reset --hard {base_branch}")
 
         # Find all myst files recursively
         myst_files = list(repo_root.glob("**/*.md"))
@@ -280,23 +276,19 @@ def create_teaching(commit=False, push=False, n_cores=1, on_fail_restore_dev=Fal
         if commit:
             # Commit all changes to myst files (our source of truth)
             repo.git.add(".")  # Less error-prone than working with path lists
-            run_command('git commit -m "Update teaching"')
+            run_command(f'git commit -m "Update {target_branch}"')
 
         if push:
             # Push files to remote
-            run_command("git push --force-with-lease --set-upstream origin teaching")
+            run_command(f"git push --force --set-upstream origin {target_branch}")
 
         # Clean up
         for ipynb_file in ipynb_files:
             os.remove(ipynb_file)
 
-        # Switch back to dev
-        repo.git.checkout("dev")
+        # Switch back to base_branch
+        repo.git.checkout(base_branch)
 
-        try:
-            repo.git.stash("pop")
-        except git.GitCommandError as e:
-            print(e)
 
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -305,8 +297,8 @@ def create_teaching(commit=False, push=False, n_cores=1, on_fail_restore_dev=Fal
             run_command("git restore --staged .")
             run_command("git restore .")
 
-            # Switch back to dev
-            repo.git.checkout("dev")
+            # Switch back to base_branch
+            repo.git.checkout(base_branch)
 
             try:
                 repo.git.stash("pop")
@@ -384,13 +376,15 @@ def convert_ipynb_to_myst_md(ipynb_file_path):
     return run_command(f'jupytext --to md:myst "{ipynb_file_path}"')
 
 
-def setup_teaching_copy(new_repo_dir="CADET-Workshop-teaching"):
+def setup_teaching_copy(new_repo_dir="CADET-Workshop-teaching", target_branch="teaching"):
     """Create a copy of this directory and check out the teaching branch in it
 
     Parameters
     ----------
     new_repo_dir : str
         Name for the new repo folder.
+    target_branch : str
+        Name of the branch to check out in the new repo folder.
 
     Returns
     -------
@@ -414,7 +408,7 @@ def setup_teaching_copy(new_repo_dir="CADET-Workshop-teaching"):
     # Clone from this repo to new repo
     new_repo = git.Repo.clone_from(repo_root, new_repo_dir)
 
-    new_repo.git.checkout("teaching")
+    new_repo.git.checkout(target_branch)
 
 
 def delete_dir_contents(dir_path):
@@ -449,6 +443,8 @@ def main(**kwargs):
     parser.add_argument('--n_cores', help='Number of cores to use.')
 
     args = parser.parse_args()
+    if args.n_cores is None:
+        args.n_cores = 1
 
     # This isn't great, but for now (and with argparse) the best I could think of
     for kwarg_key, kwarg_value in kwargs.items():
@@ -456,10 +452,12 @@ def main(**kwargs):
             continue
         args.__setattr__(kwarg_key, kwarg_value)
 
-    args.run = False
+    args.commit = True
 
-    create_solution(args.run, args.commit, args.push, args.n_cores, args.on_fail_restore_dev)
-    create_teaching(args.commit, args.push, args.n_cores, args.on_fail_restore_dev)
+    create_solution(args.run, args.commit, args.push, args.n_cores, args.on_fail_restore_dev, base_branch="test-ci",
+                    target_branch="tmp_solution")
+    create_teaching(args.commit, args.push, args.n_cores, args.on_fail_restore_dev, base_branch="test-ci",
+                    target_branch="tmp_teaching")
 
 
 if __name__ == "__main__":
