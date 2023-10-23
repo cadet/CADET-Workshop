@@ -4,12 +4,8 @@ import shutil
 from abc import abstractmethod
 from pathlib import Path
 import subprocess
-
-import sys
-
-print(sys.path)
-
 import git
+from git import GitCommandError
 
 from joblib import Parallel, delayed
 import pathos
