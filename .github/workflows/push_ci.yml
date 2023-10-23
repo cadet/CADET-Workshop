@@ -37,4 +37,4 @@ jobs:
           activate-environment: cadet_workshop
       - name: Generate teaching and solution branches
         run: |
-          python ./workshop_git_tools/process_repo.py --commit --push
+          python ./workshop_git_tools/process_repo.py --commit --run --push

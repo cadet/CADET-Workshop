@@ -451,7 +451,6 @@ def main(**kwargs):
             continue
         args.__setattr__(kwarg_key, kwarg_value)
 
-    args.run = False
     args.commit = True
 
     create_solution(args.run, args.commit, args.push, args.n_cores, args.on_fail_restore_dev, base_branch="test-ci",
