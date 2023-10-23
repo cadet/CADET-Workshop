@@ -32,8 +32,8 @@ def setup_repo():
 
     repo.heads.dev.checkout()
 
-    create_or_replace_branch(repo, 'solution')
-    create_or_replace_branch(repo, 'teaching')
+    create_or_replace_branch(repo, 'tmp_solution')
+    create_or_replace_branch(repo, 'tmp_teaching')
 
 
 if __name__ == "__main__":

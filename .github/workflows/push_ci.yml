@@ -5,9 +5,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          date > generated.txt
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add .
+          python ./workshop_git_tools/process_repo.py
           git commit -m "generated"
           git push
