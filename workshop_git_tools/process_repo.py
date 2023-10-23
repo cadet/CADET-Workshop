@@ -4,6 +4,11 @@ import shutil
 from abc import abstractmethod
 from pathlib import Path
 import subprocess
+
+import sys
+
+print(sys.path)
+
 import git
 
 from joblib import Parallel, delayed
