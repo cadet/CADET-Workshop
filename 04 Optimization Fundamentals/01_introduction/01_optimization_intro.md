@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -45,7 +45,7 @@ In the following, the `optimization` module of **CADET-Process** is introduced. 
 - An `OptimizationProblem` class to specify optimization variables, objectives and constraints, and
 - an abstract `Optimizer` interface which allows using different external optimizers to solve the problem.
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}, "editable": true}
 
 ## Example 1: Minimization of a quadratic function
 
@@ -252,6 +252,18 @@ Moreover, results are stored in a `.csv` file.
 - The `results_last.csv` file contains information about the last generation of evaluated individuals.
 - The `results_pareto.csv` file contains only the best individual(s).
 
++++
+
+$$
+\text{subject to: } \\
+x_0 + 2 x_1 \leq 1 \\
+x_0^2 + x_1 \leq 1 \\
+                    x_0^2 - x_1 \leq 1 \\
+                    2 x_0 + x_1 = 1 \\
+                    0 \leq x_0 \leq 1 \\
+                    -0.5 \leq x_1 \leq 2.0.\\
+$$
+
 +++ {"slideshow": {"slide_type": "slide"}}
 
 ## Example 2: Constrained Optimization
@@ -452,7 +464,7 @@ rosenbrock_optimization_results = trust_const_optimizer.optimize(
 )
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}, "editable": true}
 
 ### Optimization Progress and Results
 
@@ -477,55 +489,59 @@ rosenbrock_optimization_results.plot_convergence('nonlinear_constraints')
 ```
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 rosenbrock_optimization_results.plot_objectives()
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}, "editable": true}
 
 ### Initial Values
 
 To start solving any optimization problem, initial values are required.
-In CADET-Process, this can be done automatically if
-- all variables have upper and lower bounds
-- no linear equality constraints exist (this will be improved in the future!)
+To facilitate the definition of starting points, the `OptimizationProblem` provides a `create_initial_values` method.
 
-+++ {"slideshow": {"slide_type": "fragment"}}
++++ {"editable": true, "slideshow": {"slide_type": "fragment"}}
 
+```{note}
+This method only works if all optimization variables have defined lower and upper bounds.
+
+Moreover, this method only guarantees that linear constraints are fulfilled.
+Any nonlinear constraints may not be satisfied by the generated samples, and nonlinear parameter dependencies can be challenging to incorporate.
+```
+
++++ {"slideshow": {"slide_type": "fragment"}, "editable": true}
+
+By default, the method returns a random point from the feasible region of the parameter space.
+For this purpose, [hopsy](https://modsim.github.io/hopsy/) is used to efficiently (uniformly) sample the parameter space.
 To create initial values, call `create_initial_values` and specify the number of individuals that should be returned.
-By default, a random value is returned which fulfills all bound constraints and linear constraints.
 
 ```{code-cell} ipython3
-if rosenbrock_problem.n_linear_equality_constraints > 0:
-    rosenbrock_problem.remove_linear_equality_constraint(0) # just for demonstration purposes
-```
-
-```{code-cell} ipython3
-x0 = rosenbrock_problem.create_initial_values(method='chebyshev')
+x0 = rosenbrock_problem.create_initial_values(10)
 print(x0)
 ```
 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
-By specifying `method='chebyshev'`, the so-called Chebyshev center is returned; the center of a minimal-radius ball enclosed by the convex parameter space.
-If no information about the location is known, this can be a good starting point.
+Alternatively, the Chebyshev center of the polytope can be computed, which is the center of the largest Euclidean ball that is fully contained within that polytope.
 
 ```{code-cell} ipython3
-x0 = rosenbrock_problem.create_initial_values(method='chebyshev')
+x0 = rosenbrock_problem.get_chebyshev_center()
 print(x0)
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
-
-For population based algorithms such as genetic algorithm, an entire population is required.
-Because efficiently sampling a convex polytope can be difficult, we make use  of [hopsy](https://modsim.github.io/hopsy/index.html), a tool for Markov chain Monte Carlo sampling on convex polytopes.
-
-+++
-
-Let's first create a method to better visualize these points
+Let's create a method to visualize these points in the parameter space.
 
 ```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 def plot_initial_values(x0):
     import matplotlib.pyplot as plt
     import numpy as np

@@ -4,12 +4,14 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 # Comparison - Exercise
 
@@ -25,7 +27,7 @@ and UV and conductivity were measured.
 To model the additional dispersion of the system, two `Cstr`s were introduced
 ```
 
-+++
++++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 The (synthetic) experiment was repeated to account for system variability. The data was converted to concentrations in $mM$ and can be found in `./experimental_data`.
 
@@ -36,6 +38,11 @@ The (synthetic) experiment was repeated to account for system variability. The d
 - Compare with other metrics.
 
 ```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 from CADETProcess.processModel import ComponentSystem
 from CADETProcess.processModel import Inlet, Cstr, TubularReactor, Outlet
 from CADETProcess.processModel import FlowSheet
@@ -106,8 +113,12 @@ process.add_event('feed_water_off', 'flow_sheet.water.flow_rate', 0, process.cyc
 ```
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 process_simulator = Cadet()
 
 simulation_results = process_simulator.simulate(process)
@@ -118,8 +129,12 @@ fig, ax = simulation_results.solution.cond_detector.outlet.plot(fig=fig, ax=ax)
 ```
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 from CADETProcess.reference import ReferenceIO
 import numpy as np
 
@@ -149,8 +164,12 @@ reference_cond_2.plot()
 ```
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 from CADETProcess.comparison import Comparator
 
 comparator = Comparator()
@@ -162,8 +181,12 @@ comparator.add_reference(reference_cond_2)
 ```
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 comparator.add_difference_metric('SSE', reference_uv_1, 'uv_detector.outlet')
 comparator.add_difference_metric('SSE', reference_uv_2, 'uv_detector.outlet')
 
@@ -172,27 +195,39 @@ comparator.add_difference_metric('SSE', reference_cond_2, 'cond_detector.outlet'
 ```
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 comparator.evaluate(simulation_results)
 ```
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 comparator.plot_comparison(simulation_results)
 ```
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 from CADETProcess.comparison import Comparator
 comparator = Comparator()
 
 comparator.add_reference(reference)
 ```
 
-+++ {"slideshow": {"slide_type": "fragment"}}
++++ {"slideshow": {"slide_type": "fragment"}, "editable": true}
 
 ```{note}
 It's also possible to add multiple references, e.g. for triplicate experiments or for different sensors.

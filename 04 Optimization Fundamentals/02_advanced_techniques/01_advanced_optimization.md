@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -228,7 +228,7 @@ optimization_problem.add_nonlinear_constraint(
     purity,
     n_nonlinear_constraints=2,
     requires=[simulator, frac_opt],
-    bounds=[0.95, 0.95]    
+    bounds=[0.95, 0.95]
 )
 ```
 
@@ -246,14 +246,6 @@ optimization_problem.evaluate_objectives([0.5, 0.01])
 
 ```{code-cell} ipython3
 optimization_problem.objective_labels
-```
-
-+++ {"slideshow": {"slide_type": "fragment"}}
-
-```{error} 
-
-This should take into account the evaluation objects!
-Let's learn how to report a bug!
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
@@ -283,8 +275,11 @@ The callback signature may include any of the following arguments:
     Path to store results.
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 def callback(fractionation, individual, evaluation_object, callbacks_dir):
     fractionation.plot_fraction_signal(
         file_name=f'{callbacks_dir}/{individual.id}_{evaluation_object}_fractionation.png',
