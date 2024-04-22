@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -24,8 +24,14 @@ Consider a simple tracer pulse injection onto a chromatographic column.
 The following (experimental) concentration profile is measured at the column outlet.
 
 ```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 import numpy as np
 data = np.loadtxt('./experimental_data/non_pore_penetrating_tracer.csv', delimiter=',')
+
 time_experiment = data[:, 0]
 dextran_experiment = data[:, 1]
 
@@ -46,6 +52,11 @@ The `reference` module provides different classes for different types of experim
 For in- and outgoing streams of unit operations, the `ReferenceIO` class must be used.
 
 ```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 from CADETProcess.reference import ReferenceIO
 
 reference = ReferenceIO('dextran experiment', time_experiment, dextran_experiment)
@@ -282,7 +293,6 @@ def callback(simulation_results, individual, evaluation_object, callbacks_dir='.
         show=False
     )
 
-
 optimization_problem.add_callback(callback, requires=[simulator])
 ```
 
@@ -306,8 +316,8 @@ tags: [solution]
 from CADETProcess.optimization import U_NSGA3
 optimizer = U_NSGA3()
 optimizer.n_cores = 8
-optimizer.pop_size = 64
-optimizer.n_max_gen = 16
+optimizer.pop_size = 32
+optimizer.n_max_gen = 8
 ```
 
 ```{code-cell} ipython3
