@@ -4,14 +4,14 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}, "editable": true}
 
 # CADET Overview
 
@@ -19,9 +19,19 @@ kernelspec:
 :width: 75%
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}, "editable": true}
 
-## Process Model
+## Unit Operation Model
+
+```{figure} ./resources/unit_operation.png
+:width: 30%
+:align: center
+
+```
+
++++ {"slideshow": {"slide_type": "slide"}, "jp-MarkdownHeadingCollapsed": true, "editable": true}
+
+## Flow Sheet Model
 
 ```{figure} ./resources/batch_elution.svg
 :width: 50%
@@ -29,7 +39,7 @@ kernelspec:
 
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}, "jp-MarkdownHeadingCollapsed": true, "editable": true}
 
 ## Process Model
 
@@ -39,7 +49,7 @@ kernelspec:
 
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}, "editable": true}
 
 ## Simulation
 
@@ -48,7 +58,7 @@ kernelspec:
 :width: 50%
 ```
 
-+++ {"slideshow": {"slide_type": "fragment"}}
++++ {"slideshow": {"slide_type": "fragment"}, "editable": true}
 
 ```{figure} ./resources/simulation_results.png
 :align: center
@@ -71,7 +81,7 @@ kernelspec:
 :width: 33%
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}, "jp-MarkdownHeadingCollapsed": true}
 
 ## Post Processing
 
