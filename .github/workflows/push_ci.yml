@@ -1,0 +1,40 @@
+on:
+  push:
+    branches:
+      - dev
+      - test-ci
+jobs:
+  build_teaching_and_solution:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+      - name: Cache conda
+        uses: actions/cache@v3
+        env:
+          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          CACHE_NUMBER: 2
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            Ubuntu-python_3.10-${{ env.CACHE_NUMBER }}-${{ hashFiles('etc/example-environment.yml') }}
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: '3.10'
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          auto-update-conda: true
+          channels: conda-forge
+          auto-activate-base: false
+          environment-file: environment.yml
+          activate-environment: cadet_workshop
+      - name: Generate teaching and solution branches
+        run: |
+          python ./workshop_git_tools/process_repo.py --commit --push
