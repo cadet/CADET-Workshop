@@ -5,12 +5,14 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
+
++++ {"editable": true, "slideshow": {"slide_type": ""}}
 
 # Fractionation - Exercise
 
@@ -24,12 +26,21 @@ Take the following process from [this example](https://cadet-process.readthedocs
 - Use a `FractionationOptimizer` to automatically determine adequate cut times. Play around with different purity requirements and objecives.
 
 ```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 from examples.load_wash_elute.lwe_flow_rate import process
 ```
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 from CADETProcess.simulator import Cadet
 
 simulator = Cadet()
@@ -45,8 +56,12 @@ simulation_results.solution.outlet.inlet.plot(secondary_axis=sec)
 ```
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 from CADETProcess.fractionation import Fractionator
 fractionator = Fractionator(simulation_results)
 
@@ -58,8 +73,12 @@ fractionator.performance
 ```
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 fractionator = Fractionator(simulation_results, components=['A', 'B', 'C'])
 
 fractionator.add_fractionation_event('start_C', 0, 5*60)
@@ -70,8 +89,12 @@ fractionator.performance
 ```
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 from CADETProcess.fractionation import FractionationOptimizer
 fractionation_optimizer = FractionationOptimizer()
 

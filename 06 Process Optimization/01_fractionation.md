@@ -4,14 +4,14 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
 
-+++ {"slideshow": {"slide_type": ""}, "editable": true}
++++ {"slideshow": {"slide_type": "slide"}, "editable": true}
 
 # Product Fractionation
 
@@ -24,7 +24,7 @@ $$
 
 where $n_{frac, k}^{i}$ is the number of fractions considered for component $i$ in chromatogram $k$, and $n_{chrom}$ is the number of chromatograms that is evaluated.
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}, "editable": true}
 
 ## Key Performance Indicators (KPI)
 
@@ -34,7 +34,7 @@ PR_{i} = \frac{m_i}{V_{solid} \cdot \Delta t_{cycle}},\\
 $$
 with $V_{solid}$: volume of stationary phase.
 
-+++ {"slideshow": {"slide_type": "fragment"}}
++++ {"slideshow": {"slide_type": "fragment"}, "editable": true}
 
 ### Recovery Yield
 $$
@@ -42,7 +42,7 @@ Y_{i} = \frac{m_i}{m_{feed, i}},\\
 $$
 with $m_{feed}$: injected amount of mixture.
 
-+++ {"slideshow": {"slide_type": "fragment"}}
++++ {"slideshow": {"slide_type": "fragment"}, "editable": true}
 
 ### Eluent Consumption
 $$
@@ -50,7 +50,7 @@ EC_{i} = \frac{V_{solvent}}{m_i},\\
 $$
 with $V_{solvent}$: solvent used during a cycle.
 
-+++ {"slideshow": {"slide_type": "fragment"}}
++++ {"slideshow": {"slide_type": "fragment"}, "editable": true}
 
 ### Purity
 
@@ -59,29 +59,33 @@ PU_{i} = \frac{m_{i}^{i}}{\sum_{l=1}^{n_{comp}} m_{l}^{i}},\\
 $$
 where $n_{comp}$ is the number of mixture components and $m_{l}^{i}$ is the mass of component $l$ in target fraction $i$.
 
-+++
++++ {"editable": true, "slideshow": {"slide_type": "slide"}}
 
 ## Fractionator
 
 In **CADET-Process**, the `fractionation` module provides methods to calculate these performance indicators.
 
-+++ {"slideshow": {"slide_type": "fragment"}}
++++ {"slideshow": {"slide_type": "fragment"}, "editable": true}
 
 The `Fractionator` allows slicing the solution and pool fractions for the individual components.
 It enables evaluating multiple chromatograms at once and multiple fractions per component per chromatogram.
 
-+++ {"slideshow": {"slide_type": "fragment"}}
++++ {"slideshow": {"slide_type": "fragment"}, "editable": true}
 
 The most basic strategy is to manually set all fractionation times manually.
 To demonstrate the strategy, a process from the [examples collection](https://cadet-process.readthedocs.io/en/latest/examples/batch_elution/process.html) is used.
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 from examples.batch_elution.process import process
 ```
 
-+++ {"slideshow": {"slide_type": "fragment"}}
++++ {"slideshow": {"slide_type": "fragment"}, "editable": true}
 
 To enable the calculation of the process parameters, it is necessary to specify which of the inlets should be considered for the feed and eluent consumption.
 Moreover, the outlet(s) which are used for evaluation need to be defined.
@@ -93,42 +97,53 @@ process.flow_sheet.add_chromatogram_outlet('outlet')
 ```
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 from CADETProcess.simulator import Cadet
 process_simulator = Cadet()
 simulation_results = process_simulator.simulate(process)
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}, "editable": true}
 
 For reference, this is the chromatogram at the outlet that needs to be fractionated:
 
 ```{code-cell} ipython3
 ---
+editable: true
 render:
   figure:
     caption: 'Concentration profile at column outlet.
 
       '
     name: column_outlet
+slideshow:
+  slide_type: ''
 tags: [solution]
 ---
 _ = simulation_results.solution.outlet.outlet.plot()
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}, "editable": true}
 
 After import, the `Fractionator` is instantiated with the simulation results.
 
 ```{code-cell} ipython3
-:tags: [solution]
-
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [solution]
+---
 from CADETProcess.fractionation import Fractionator
 fractionator = Fractionator(simulation_results)
 ```
 
-+++ {"slideshow": {"slide_type": "fragment"}}
++++ {"slideshow": {"slide_type": "fragment"}, "editable": true}
 
 To add a fractionation event, the following arguments need to be provided:
 - `event_name`: Name of the event.
