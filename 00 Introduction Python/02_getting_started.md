@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -22,6 +22,7 @@ The simplest program in Python consists of a line that tells the computer a comm
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 print('Hello world!')
 ```
 
@@ -34,6 +35,7 @@ The most important thing to learn in programming is finding help. The easiest wa
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 help(print)
 ```
 
@@ -47,11 +49,13 @@ Python can be used just like a calculator. Enter an expression and the interpret
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 1 + 1
 ```
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 (50 * 5 - 6) / 3
 ```
 
@@ -76,6 +80,7 @@ We've already seen some operators. Operators are used to transform, compare, joi
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 # Area of unit circle. <-- Note the '#', it makes everything after that a comment, i.e. it will NOT be executed
 3.1415926/4 * 2**2
 ```
@@ -84,6 +89,7 @@ We've already seen some operators. Operators are used to transform, compare, joi
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 1 == 0
 ```
 
@@ -92,12 +98,14 @@ We've already seen some operators. Operators are used to transform, compare, joi
 ```{code-cell} ipython3
 :tags: [solution]
 
+
 ```
 
 ***Task:*** Determine whether $35^2$ is greater than $2^{10}$.
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 
 ```
 
@@ -113,6 +121,7 @@ The operand to the left of the ```=``` operator is the name of the variable and 
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 answer = 42
 print(answer)
 ```
@@ -121,6 +130,7 @@ print(answer)
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 1diameter = 1
 length! = 10
 circle_area = 3.1415926/4* diameter**2
@@ -131,6 +141,7 @@ circle_area = 3.1415926/4* diameter**2
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 
 ```
 
@@ -152,6 +163,7 @@ The type can be determined using the ```type``` function.
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 foo = 2.0
 print(type(foo))
 ```
@@ -160,6 +172,7 @@ print(type(foo))
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 answer = 42
 file_name = "readme.md"
 ```
@@ -168,20 +181,11 @@ Almost everything in Python has *attributes* and *methods*.
 
 +++
 
-***Example:*** Complex numbers are an extension of the familiar real number system in which all numbers are expressed as a sum of a real part and an imaginary part. Imaginary numbers are real multiples of the imaginary unit (the square root of -1), written with $j$ in Python. You can access the real and imaginary parts of complex numbers using ```real``` and ```imganiary``` parts.
-
-```{code-cell} ipython3
-:tags: [solution]
-c = complex(3,2)
-print(type(c))
-print(c.real)
-print(c.imag)
-```
-
 ***Task:*** The method ```upper()``` returns a copy of the string in which all case-based characters have been uppercased. Use this method to capitalize a string variable.
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 
 ```
 
@@ -194,6 +198,7 @@ Lists are the most versatile compound data type for grouping together values in 
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 my_list = ['abcd', 786 , 2.23, 'john', 70.2]
 print(my_list)
 print(my_list[0])
@@ -204,12 +209,14 @@ print(my_list[0])
 ```{code-cell} ipython3
 :tags: [solution]
 
+
 ```
 
 ***Task:*** Append ```99``` to the list using the ```append()``` method.
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 
 ```
 
@@ -224,6 +231,7 @@ keys, which can be either numbers or strings.
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 my_dict = {'name': 'Cadet', 'version': '4.1.0', 'nUsers': 500}
 print(my_dict)
 print(my_dict['name'])
@@ -235,23 +243,10 @@ Dictionaries, like lists, can be nested.
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 my_dict = {'name': 'Cadet', 'version': '4.1.0', 'nUsers': 500}
 my_dict['stats'] = { 'github_stars': 1000, 'downloads': 2000, 'issues': 3}
 print(my_dict)
-```
-
-#### Addict
-
-Since the syntax to traverse deeply nested dictionaries can be quite tedious, we can use the package `addict` to simplify it to the dot notation.
-
-```{code-cell} ipython3
-:tags: [solution]
-from addict import Dict
-
-my_new_dict = Dict(my_dict)
-print(my_new_dict.stats)
-my_new_dict.stats.pull_requests = 10
-print(my_new_dict.stats)
 ```
 
 ### Python syntax
@@ -272,6 +267,7 @@ Conditional statements are used to direct the flow of the program to different c
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 x = 4
 if x < 3:
     print('less than 3')
@@ -286,6 +282,7 @@ else:
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 menu = ['eggs','bacon']
 ```
 
@@ -298,6 +295,7 @@ Often, we don't know (or care) how many elements are in a container (e.g. list).
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 list_of_primes = [2, 3, 5, 7]
 for element in list_of_primes:
     print(element)
@@ -307,6 +305,7 @@ for element in list_of_primes:
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 
 ```
 
@@ -322,6 +321,7 @@ A function definition describes what is to be calculated once the function is ca
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 def circle_area(diameter):
     return 3.1415926/4 * diameter**2
 
@@ -333,5 +333,6 @@ print(area)
 
 ```{code-cell} ipython3
 :tags: [solution]
+
 
 ```
