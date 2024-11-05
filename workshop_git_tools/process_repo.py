@@ -155,7 +155,7 @@ def create_solution(run=False, commit=False, push=False, n_cores=1, on_fail_rest
         repo.git.checkout("solution")
 
         # Reset to `dev`
-        run_command("git reset --hard dev")
+        run_command("git restore --source dev .")
 
         # Find all myst files recursively
         myst_files = list(repo_root.glob("**/*.md"))
@@ -193,6 +193,8 @@ def create_solution(run=False, commit=False, push=False, n_cores=1, on_fail_rest
 
         # Switch back to dev
         repo.git.checkout("dev")
+
+        run_command("git clean -fd")
 
         try:
             repo.git.stash("pop")
@@ -251,7 +253,7 @@ def create_teaching(commit=False, push=False, n_cores=1, on_fail_restore_dev=Fal
         repo.git.checkout("teaching")
 
         # Reset to `dev`
-        run_command("git reset --hard dev")
+        run_command("git restore --source dev .")
 
         # Find all myst files recursively
         myst_files = list(repo_root.glob("**/*.md"))
@@ -292,6 +294,8 @@ def create_teaching(commit=False, push=False, n_cores=1, on_fail_restore_dev=Fal
 
         # Switch back to dev
         repo.git.checkout("dev")
+
+        run_command("git clean -fd")
 
         try:
             repo.git.stash("pop")
