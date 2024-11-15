@@ -55,7 +55,7 @@ editable: true
 slideshow:
   slide_type: ''
 ---
-column_2_length, column_2_diameter
+# column_2_length, column_2_diameter
 ```
 
 +++ {"editable": true, "slideshow": {"slide_type": "slide"}}
@@ -120,9 +120,9 @@ class Column:
         return volume
 
 column = Column(0.1, 0.001)
-print(column.volume
+print(column.volume)
 column2 = Column(0.2, 0.001)
-print(column2.volume
+print(column2.volume)
 column.length = 10
 print(column.volume)
 ```
