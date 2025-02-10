@@ -14,6 +14,7 @@ from ipywidgets import HBox, VBox
 from ipywidgets import Layout
 from matplotlib.gridspec import GridSpec
 from scipy.interpolate import PchipInterpolator, interp1d
+from cadet import Cadet
 
 from .langmuir import create_sim_langmuir
 from .lwe import create_sim_lwe
@@ -464,8 +465,6 @@ class Gui:
                 self.sim.root.input.model.unit_001.adsorption.sma_lambda = self.slider_qmax.get()
         self.sim.save()
         return_code = self.sim.run_load()
-        if len(return_code.stderr) != 0:
-            print(return_code.returncode, return_code.stderr)
 
         self.load_sim_values()
         if self.previous_porosity != (
@@ -525,11 +524,9 @@ class Gui:
             self.slider_keq.configure(from_=-5, to=0)
 
         self.sim.filename = r'tmp\sim.h5'
-        self.sim.cadet_path = r"C:/Users/ronal/mambaforge/envs/interactive/bin/cadet-cli.exe"
+        self.sim.cadet_path = Cadet.autodetect_cadet()
         self.sim.save()
         return_code = self.sim.run()
-        if len(return_code.stderr) != 0:
-            print(return_code.stderr, return_code.stdout)
         self.sim.load()
 
         self.slider_col_dispersion.set(self.sim.root.input.model.unit_001.col_dispersion)
