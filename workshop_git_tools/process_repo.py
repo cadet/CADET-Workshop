@@ -461,10 +461,14 @@ def main(**kwargs):
         args.__setattr__(kwarg_key, kwarg_value)
 
     args.run = False
+    if args.n_cores is None:
+        args.n_cores = 1
 
     create_solution(args.run, args.commit, args.push, args.n_cores, args.on_fail_restore_dev)
     create_teaching(args.commit, args.push, args.n_cores, args.on_fail_restore_dev)
 
 
 if __name__ == "__main__":
-    main()
+    import os
+    os.chdir("..")
+    main(n_cores=1, run=False, commit=True, push=False, on_fail_restore_dev=True)
