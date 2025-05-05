@@ -2,6 +2,7 @@
 import asyncio
 from time import time
 
+from addict import Dict
 import cv2
 import imageio.v3 as iio
 import ipywidgets as widgets
@@ -433,6 +434,16 @@ class Gui:
     def simulate(self, _=None):
         if not self.allow_simulations:
             return
+
+        self.sim.root.model.solver = Dict({'nthreads': np.int32(1),
+                                           'sections': {'nsec': np.int32(3),
+                                                        'section_continuity': np.array([0, 0]),
+                                                        'section_times': np.array([0., 10., 90., 1500.])},
+                                           'time_integrator': {'abstol': np.float64(1e-08),
+                                                               'algtol': np.float64(1e-12),
+                                                               'init_step_size': np.float64(1e-06),
+                                                               'max_steps': np.int32(10000),
+                                                               'reltol': np.float64(1e-06)}})
         if self.checkbox_precision.get():
             times = self.sim.root.input.solver.user_solution_times
             self.sim.root.input.solver.user_solution_times = np.linspace(0, times.max(), 300)
@@ -466,7 +477,7 @@ class Gui:
             if hasattr(self, "slider_qmax"):
                 self.sim.root.input.model.unit_001.adsorption.sma_lambda = self.slider_qmax.get()
         self.sim.save()
-        return_code = self.sim.run_load()
+        return_code = self.sim.run_load(timeout=5)
 
         self.load_sim_values()
         if self.previous_porosity != (
@@ -525,7 +536,7 @@ class Gui:
         if self.experiment_id.get() == 5:
             self.slider_keq.configure(from_=-5, to=0)
 
-        self.sim.filename = r'tmp\sim.h5'
+        self.sim.filename = r'tmp_sim.h5'
         self.sim.cadet_path = Cadet.autodetect_cadet()
         self.sim.save()
         return_code = self.sim.run()

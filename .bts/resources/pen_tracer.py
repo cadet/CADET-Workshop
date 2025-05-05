@@ -54,7 +54,6 @@ def create_sim_pen():
     root.input.model.unit_001.film_diffusion = numpy.array([1e-03])
     root.input.model.unit_001.init_c = numpy.array([0, ])
     root.input.model.unit_001.init_cp = numpy.array([0, ])
-    root.input.model.unit_001.init_q = numpy.array([0., ])
     root.input.model.unit_001.ncomp = 1
     root.input.model.unit_001.par_diffusion = numpy.array([4.00e-11, ])
     root.input.model.unit_001.par_porosity = 0.5
