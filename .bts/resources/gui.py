@@ -477,7 +477,7 @@ class Gui:
             if hasattr(self, "slider_qmax"):
                 self.sim.root.input.model.unit_001.adsorption.sma_lambda = self.slider_qmax.get()
         self.sim.save()
-        return_code = self.sim.run_load(timeout=5)
+        return_code = self.sim.run_simulation(timeout=5)
 
         self.load_sim_values()
         if self.previous_porosity != (
@@ -537,10 +537,9 @@ class Gui:
             self.slider_keq.configure(from_=-5, to=0)
 
         self.sim.filename = r'tmp_sim.h5'
-        self.sim.cadet_path = Cadet.autodetect_cadet()
         self.sim.save()
-        return_code = self.sim.run()
-        self.sim.load()
+        return_code = self.sim.run_simulation()
+        self.sim.load_from_file()
 
         self.slider_col_dispersion.set(self.sim.root.input.model.unit_001.col_dispersion)
         self.slider_col_porosity.set(self.sim.root.input.model.unit_001.col_porosity)
