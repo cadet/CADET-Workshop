@@ -46,11 +46,6 @@ def create_sim_non_pen():
     root.input.model.unit_000.sec_002.quad_coeff = numpy.array([0.])
     root.input.model.unit_000.unit_type = b'INLET'
 
-    root.input.model.unit_001.adsorption.adsorption_model = b'LINEAR'
-    root.input.model.unit_001.adsorption.is_kinetic = False
-    root.input.model.unit_001.adsorption.lin_ka = numpy.array([0.])
-    root.input.model.unit_001.adsorption.lin_kd = numpy.array([1.])
-    root.input.model.unit_001.adsorption_model = b'LINEAR'
     root.input.model.unit_001.col_dispersion = 5.75e-8
 
     root.input.model.unit_001.col_length = 0.02
@@ -149,8 +144,6 @@ def create_sim_non_pen():
 
     root.input.sensitivity.nsens = 0
     root.input.sensitivity.sens_method = b'ad1'
-    root.input.solver.consistent_init_mode = 1
-    root.input.solver.consistent_init_mode_sens = 1
     root.input.solver.nthreads = 1
     root.input.solver.sections.nsec = 3
     root.input.solver.sections.section_continuity = numpy.array([0])
