@@ -173,7 +173,6 @@ if __name__ == '__main__':
     start_time = datetime.now()
     sim = create_sim_lwe()
     sim.filename = 'Y:\sim.h5'
-    sim.cadet_path = r"C:\Users\ronal\Documents\CADET-4.3.0\cadet\bin\cadet-cli.exe"
     sim.root.input.solver.user_solution_times = numpy.linspace(0, sim.root.input.solver.user_solution_times[-1], 1000)
     for i in range(1):
         sim.filename = Path(sim.filename.replace("sim.h5", "sim2.h5"))

@@ -46,11 +46,6 @@ def create_sim_pen():
     root.input.model.unit_000.sec_002.quad_coeff = numpy.array([0.,])
     root.input.model.unit_000.unit_type = b'INLET'
 
-    root.input.model.unit_001.adsorption.adsorption_model = b'LINEAR'
-    root.input.model.unit_001.adsorption.is_kinetic = False
-    root.input.model.unit_001.adsorption.lin_ka = numpy.array([0.])
-    root.input.model.unit_001.adsorption.lin_kd = numpy.array([1.])
-    root.input.model.unit_001.adsorption_model = b'LINEAR'
     root.input.model.unit_001.col_dispersion = 5.75e-8
 
     root.input.model.unit_001.col_length = 0.02
@@ -149,7 +144,6 @@ def create_sim_pen():
 
     root.input.sensitivity.nsens = 0
     root.input.sensitivity.sens_method = b'ad1'
-    root.input.solver.consistent_init_mode = 1
     root.input.solver.consistent_init_mode_sens = 1
     root.input.solver.nthreads = 1
     root.input.solver.sections.nsec = 3
@@ -180,14 +174,12 @@ if __name__ == '__main__':
     start_time = datetime.now()
     sim = create_sim_pen()
     sim.filename = 'sim.h5'
-    sim.cadet_path = r"C:/Users/ronal/mambaforge/envs/interactive/bin/cadet-cli.exe"
 
     sim.root.input.solver.user_solution_times = numpy.linspace(0, sim.root.input.solver.user_solution_times[-1], 1000)
-    for i in range(1):
-        sim.filename = Path(sim.filename.replace("sim.h5", "sim2.h5"))
-        sim.save()
-        return_info = sim.run()
-        sim.load()
+    sim.filename = Path(sim.filename.replace("sim.h5", "sim2.h5"))
+    sim.save()
+    return_info = sim.run()
+    sim.load()
     end_time = datetime.now()
     print(end_time - start_time)
 

@@ -181,20 +181,13 @@ if __name__ == '__main__':
 
     start_time = datetime.now()
     sim = create_sim_langmuir()
-    sim.filename = 'simulations\sim.h5'
-    # sim.cadet_path = r"C:\Users\ronal\Documents\CADET-4.3.0\cadet\bin\cadet-cli.exe"
-    # sim.cadet_path = r"C:\Users\ronal\Documents\CADET-git\cadet\bin\cadet-cli.exe"
-    # sim.cadet_path = "/home/ron/miniconda3/envs/presentation/bin/cadet-cli"
-    sim.cadet_path = r"C:/Users/ronal/mambaforge/envs/interactive/bin/cadet-cli.exe"
-
+    sim.filename = 'sim.h5'
 
     sim.root.input.solver.user_solution_times = numpy.linspace(0, sim.root.input.solver.user_solution_times[-1], 1000)
-    for i in range(1):
-        sim.filename = Path(sim.filename.replace("sim.h5", "sim2.h5"))
-        sim.save()
-        return_code = sim.run()
-        print(return_code.returncode, return_code.stderr, return_code.stdout)
-        sim.load()
+    sim.filename = Path(sim.filename.replace("sim.h5", "sim2.h5"))
+    sim.save()
+    return_code = sim.run()
+    sim.load()
     end_time = datetime.now()
     print(end_time - start_time)
 

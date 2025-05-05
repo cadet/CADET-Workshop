@@ -420,6 +420,8 @@ class Gui:
         else:
             data_name = "HIC.npy"
 
+        data_name = f"resources/{data_name}"
+
         data = np.load(data_name)
 
         if self.checkbox_reference.get():
