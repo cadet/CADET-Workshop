@@ -8,10 +8,13 @@ dependencies:
   - jupyter
   - jupytext
   - pre-commit
+  - openpyxl
   - cadet
   - pip
   - pip:
-    - cadet-process>=0.9.1
+    - "git+https://github.com/fau-advanced-separations/CADET-Process.git@dev"
     - nbtoolbelt
     - jupyterlab_myst
     - jupyterlab_deck
+    - ipympl
+    - ipywidgets
