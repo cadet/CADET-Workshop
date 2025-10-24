@@ -36,7 +36,8 @@ from CADETProcess.processModel import Inlet, Outlet, Cstr
 reactor = Cstr(component_system, name='reactor')
 reactor.porosity = 0.5
 reactor.binding_model = binding_model
-reactor.V = 1e-3
+reactor.init_liquid_volume = 1e-3
+reactor.const_solid_volume = 0
 
 inlet = Inlet(component_system, name='inlet')
 inlet.c = [[0,1,0,0]]
@@ -104,7 +105,8 @@ from CADETProcess.processModel import Inlet, Outlet, Cstr
 reactor = Cstr(component_system, name='reactor')
 reactor.porosity = 0.5
 reactor.binding_model = binding_model
-reactor.V = 1e-3
+reactor.init_liquid_volume = 1e-3
+reactor.const_solid_volume = 0
 
 inlet = Inlet(component_system, name='inlet')
 inlet.c = [1.0, 1.0]
@@ -133,7 +135,7 @@ from CADETProcess.simulator import Cadet
 simulator = Cadet()
 simulator.time_resolution = 0.1
 
-sim_results = simulator.run(process)
+sim_results = simulator.simulate(process)
 _ = sim_results.solution.reactor.outlet.plot()
 ```
 
@@ -202,7 +204,7 @@ process.cycle_time = 100
 
 from CADETProcess.simulator import Cadet
 simulator = Cadet()
-sim_results = simulator.run(process)
+sim_results = simulator.simulate(process)
 _ = sim_results.solution.reactor.outlet.plot()
 
 ```

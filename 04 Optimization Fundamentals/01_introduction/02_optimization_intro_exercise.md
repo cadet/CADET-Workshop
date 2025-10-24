@@ -77,7 +77,7 @@ optimizer.results.plot_objectives()
 optimizer = TrustConstr()
 optimizer.n_max_gen = 10
 
-optimization_results = optimizer.optimize(optimization_problem, x0=0.5)
+optimization_results = optimizer.optimize(optimization_problem, x0=[0.5])
 ```
 
 ```{code-cell} ipython3

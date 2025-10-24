@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.18.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -21,9 +21,7 @@ Chromatographic systems always require some kind of convective flow through the 
 +++ {"slideshow": {"slide_type": "fragment"}}
 
 In this lesson, we will:
-- Create and connect our first systems of unit operations.
 - Define inlet profiles using piecewise cubic polynomials.
-- Run CADET and analyze the results.
 
 +++ {"slideshow": {"slide_type": "slide"}}
 
@@ -45,15 +43,6 @@ In the first section, the concentration is $1.0~mM$, and after $1~min$, it is ch
 +++ {"slideshow": {"slide_type": "slide"}}
 
 ## 1. Setting up the model
-
-Before we start with specifying the system, we define some local auxiliary variables.
-Note that we have to convert all units to SI units.
-
-
-```{note}
-Generally, CADET can be used with any consistent system of units.
-However, we strongly recommend converting everything to the SI system.
-```
 
 +++ {"slideshow": {"slide_type": "slide"}}
 
@@ -270,4 +259,63 @@ The simulation_results object contains the solution for the inlet and outlet of 
 
 _ = simulation_results.solution.inlet.outlet.plot()
 _ = simulation_results.solution.outlet.inlet.plot()
+```
+
+## 5. Other inlet profiles
+
+Processes may require more complex inlet profiles. CADET-Process allows us to add concentration gradients as high degree polynomials.
+
+E.g. to achieve a concentration gradient from 0 to 1 over 60 s, use a first degree polynomial: $y = a_1\cdot x + a_0$.
+
+General form from $y_0$ to $y_1$ over duration $T$:
+$y(t) = y_0 + \dfrac{y_1 - y_0}{T}\cdot t$ for $0 \le t \le T$.
+
+
+With $y(0)=0$ and $y(60)=1$:
+$0 = a_1\cdot 0 + a_0 \Rightarrow a_0 = 0$, $1 = a_1\cdot 60 + 0 \Rightarrow a_1 = 1\cdot 60^{-1}$.
+
+CADET polynomial coefficients: $a_0 = 0$, $a_1 = 1\cdot 60^{-1}$.
+
+
+
+```{code-cell} ipython3
+process.remove_event('start load')
+process.add_event('start load', 'flow_sheet.inlet.c', [[0,1/60]], 0)
+process.plot_events()
+```
+
+When the inlet profile cannot be represented by a polynomial, CADET-Process offers the functionality to add inlet profiles from arrays. 
+
+First let's create a complex simulated inlet profile with some noise:
+
+```{code-cell} ipython3
+import numpy as np
+import matplotlib.pyplot as plt
+
+def noisy_inlet(t, seed=0):
+    r = np.random.default_rng(seed)
+    s = np.exp(-0.5*((t-30)/5)**2) + 0.7*np.exp(-0.5*((t-80)/9)**2)
+    d = 0.03*np.sin(2*np.pi*0.02*t)
+    n = r.normal(0, 0.02, t.size)
+    k = np.exp(-np.abs(np.arange(-15, 16))/5)
+    y = np.convolve(n, k, 'same')/k.sum()
+    return np.clip(s + d + y, 0, None)
+
+t = np.linspace(0, 120, 200)
+c = noisy_inlet(t).reshape(-1,1)
+
+plt.plot(t,c)
+```
+
+```{code-cell} ipython3
+process.remove_event('start load')
+process.remove_event('start wash')
+```
+
+```{code-cell} ipython3
+process.add_concentration_profile('inlet',t,c)
+```
+
+```{code-cell} ipython3
+process.plot_events()
 ```

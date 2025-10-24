@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.18.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -117,7 +117,8 @@ inlet.flow_rate = Q
 
 cstr = Cstr(component_system, 'cstr')
 cstr.c = [0]
-cstr.V = V
+cstr.init_liquid_volume = V
+cstr.const_solid_volume = 0
 cstr.flow_rate = Q
 
 outlet = Outlet(component_system, 'outlet')
@@ -161,7 +162,7 @@ process.add_event('start peak', 'flow_sheet.inlet.c', 1/step_size, 0)
 process.add_event('end peak', 'flow_sheet.inlet.c', 0, step_size)
 ```
 
-+++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}}
 
 ### Simulate Process
 
@@ -177,7 +178,7 @@ simulation_results.solution.cstr.inlet.plot()
 simulation_results.solution.cstr.outlet.plot()
 ```
 
-+++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}}
 
 ## Example 2: Plug flow reactor
 
@@ -271,7 +272,7 @@ process.add_event('start peak', 'flow_sheet.inlet.c', 1/step_size, 0)
 process.add_event('end peak', 'flow_sheet.inlet.c', 0, step_size)
 ```
 
-+++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}}
 
 ### Simulate Process
 
@@ -329,7 +330,7 @@ simulation_results = simulator.simulate(process)
 simulation_results.solution.pfr.outlet.plot()
 ```
 
-+++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
++++ {"slideshow": {"slide_type": "slide"}}
 
 ### Low discretization
 
@@ -341,48 +342,9 @@ simulation_results = simulator.simulate(process)
 simulation_results.solution.pfr.outlet.plot()
 ```
 
-+++ {"slideshow": {"slide_type": "slide"}}
-
-### Visualization
-
-Additionally to the solution at the inlet and outlet of a unit operation, we can also take a look inside the column to see the peak move.
-
-For this purpose, set the flag in the unit's `SolutionRecorder`.
-Then, the `SimulationResults` will also contain an entry for the bulk.
-
-**Note:** Since this solution is two-dimensinal (space and time), the solution can be plotted at a given position (`plot_at_location`) or a given time (`plot_at_time`).
-
-```{code-cell} ipython3
-:tags: [solution]
-
-pfr.solution_recorder.write_solution_bulk = True
-
-simulation_results = simulator.simulate(process)
-```
-
 ```{code-cell} ipython3
 :tags: [solution]
 
 simulation_results.solution.pfr.bulk.plot_at_position(0.5)
 simulation_results.solution.pfr.bulk.plot_at_time(0.01)
-```
-
-```{code-cell} ipython3
-:tags: [solution]
-
-from ipywidgets import interact, interactive
-import ipywidgets as widgets
-
-Visualization
-def graph_column(time=0):
-    fig, ax = simulation_results.solution.pfr.bulk.plot_at_time(time)
-    ax.set_ylim(0,0.1)
-
-style = {'description_width': 'initial'}
-interact(
-    graph_column,
-    time=widgets.IntSlider(
-        min=0, max=process.cycle_time, step=10, layout={'width': '800px'}, style=style, description='Time'
-    )
-)
 ```

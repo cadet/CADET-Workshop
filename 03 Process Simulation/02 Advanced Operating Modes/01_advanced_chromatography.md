@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.18.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -94,7 +94,8 @@ eluent.c = [0, 0]
 
 # Mixer
 valve = Cstr(component_system, 'valve')
-valve.V = 1e-6
+valve.init_liquid_volume = 1e-6
+valve.const_solid_volume = 0
 valve.flow_rate = Q
 
 # Column

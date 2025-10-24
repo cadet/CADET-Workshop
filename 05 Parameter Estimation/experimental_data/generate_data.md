@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.2
+    jupytext_version: 1.18.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -39,7 +39,7 @@ water = Inlet(component_system, name='water')
 water.c = [0]
 
 inlet_valve = Cstr(component_system, name='inlet_valve')
-inlet_valve.V = 0.5e-6
+inlet_valve.init_liquid_volume = 0.5e-6
 inlet_valve.c = [0]
 
 tubing = TubularReactor(component_system, name='tubing')
@@ -49,11 +49,11 @@ tubing.axial_dispersion = 2.5e-7
 tubing.c = [0]
 
 uv_detector = Cstr(component_system, name='uv_detector')
-uv_detector.V = 0.1e-6
+uv_detector.init_liquid_volume = 0.1e-6
 uv_detector.c = [0]
 
 cond_detector = Cstr(component_system, name='cond_detector')
-cond_detector.V = 0.2e-6
+cond_detector.init_liquid_volume = 0.2e-6
 cond_detector.c = [0]
 
 outlet = Outlet(component_system, name='outlet')

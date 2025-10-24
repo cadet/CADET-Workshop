@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.18.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -115,8 +115,8 @@ from CADETProcess.processModel import  Cstr
 reactor = Cstr(component_system, name='reactor')
 reactor.binding_model = binding_model
 
-reactor.porosity = 0.5
-reactor.V = 1e-3
+reactor.init_liquid_volume = 0.5*1e-3
+reactor.const_solid_volume = 0.5*1e-3
 ```
 
 +++ {"slideshow": {"slide_type": "fragment"}}
@@ -169,7 +169,7 @@ process.cycle_time = 10
 
 from CADETProcess.simulator import Cadet
 simulator = Cadet()
-sim_results = simulator.run(process)
+sim_results = simulator.simulate(process)
 
 # _ = sim_results.solution.reactor.bulk.plot()
 _ = sim_results.solution.reactor.outlet.plot()
@@ -197,9 +197,9 @@ Now, the solution looks much smoother.
 ```{code-cell} ipython3
 :tags: [solution]
 
-sim_results = simulator.run(process)
+sim_results = simulator.simulate(process)
 
-# _ = sim_results.solution.reactor.bulk.plot()
+#_ = sim_results.solution.reactor.bulk.plot()
 _ = sim_results.solution.reactor.outlet.plot()
 _ = sim_results.solution.reactor.solid.plot()
 ```
@@ -242,8 +242,8 @@ inlet.flow_rate = 1e-3
 reactor = Cstr(component_system, name='reactor')
 reactor.binding_model = binding_model
 
-reactor.porosity = 0.5
-reactor.V = 1e-3
+reactor.init_liquid_volume = 0.5*1e-3
+reactor.const_solid_volume = 0.5*1e-3
 reactor.c = [0.0, 0.0]
 reactor.q = [0.0, 0.0]  # optional
 
@@ -278,7 +278,7 @@ process.cycle_time = 10
 
 from CADETProcess.simulator import Cadet
 simulator = Cadet()
-sim_results = simulator.run(process)
+sim_results = simulator.simulate(process)
 
 # _ = sim_results.solution.reactor.bulk.plot()
 _ = sim_results.solution.reactor.outlet.plot()
@@ -369,8 +369,8 @@ inlet.flow_rate = 1e-3
 reactor = Cstr(component_system, name='reactor')
 reactor.binding_model = binding_model
 
-reactor.V = 1e-3
-reactor.porosity = 0.5
+reactor.init_liquid_volume = 0.5*1e-3
+reactor.const_solid_volume = 0.5*1e-3
 reactor.c = [0.0, 0.0]
 reactor.q = [0.0, 0.0]  # optional
 
@@ -420,7 +420,7 @@ from CADETProcess.simulator import Cadet
 simulator = Cadet()
 simulator.time_resolution = 0.01
 
-sim_results = simulator.run(process)
+sim_results = simulator.simulate(process)
 
 # _ = sim_results.solution.reactor.bulk.plot()
 _ = sim_results.solution.reactor.outlet.plot()
