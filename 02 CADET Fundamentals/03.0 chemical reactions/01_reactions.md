@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.18.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -13,10 +13,6 @@ kernelspec:
 ---
 
 # Chemical Reactions
-
-$$
-\require{mhchem}
-$$
 
 Since version 4, it is possible to model chemical reactions with CADET using mass action law type reactions (see [Reaction models](https://cadet.github.io/master/modelling/reactions.html#reaction-models)).
 The mass action law states that the speed of a reaction is proportional to the product of the concentrations of their reactants.
@@ -34,8 +30,9 @@ In this tutorial, we're going to learn how to setup:
 As a simple example, consider the following system:
 
 $$
-\ce{1 A ->[k_{AB}] 1 B}
+1\,\mathrm{A} \xrightarrow{k_{AB}} 1\,\mathrm{B}
 $$
+
 
 +++
 
@@ -86,7 +83,8 @@ from CADETProcess.processModel import Cstr
 
 reactor = Cstr(component_system, 'reactor')
 reactor.bulk_reaction_model = reaction_system
-reactor.V = 1e-6
+reactor.init_liquid_volume = 1e-6
+reactor.const_solid_volume = 0
 reactor.c = [1.0, 0.0]
 ```
 
@@ -116,7 +114,7 @@ After simulation, the results can be plotted:
 
 from CADETProcess.simulator import Cadet
 simulator = Cadet()
-sim_results = simulator.run(process)
+sim_results = simulator.simulate(process)
 _ = sim_results.solution.reactor.outlet.plot()
 ```
 
@@ -126,7 +124,7 @@ _ = sim_results.solution.reactor.outlet.plot()
 It is also possible to consider equilibrium reactions where the product can react back to the educts.
 
 $$
-\ce{ 2 A <=>[k_{AB}][k_{BA}] B}
+2\,\mathrm{A} \xleftrightarrow[k_{BA}]{k_{AB}} \mathrm{B}
 $$
 
 +++ {"slideshow": {"slide_type": "slide"}}
@@ -154,6 +152,6 @@ After simulation, the results can be plotted:
 ```{code-cell} ipython3
 :tags: [solution]
 
-sim_results = simulator.run(process)
+sim_results = simulator.simulate(process)
 _ = sim_results.solution.reactor.outlet.plot()
 ```

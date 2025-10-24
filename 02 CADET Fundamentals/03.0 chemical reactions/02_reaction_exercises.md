@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.18.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -19,8 +19,10 @@ kernelspec:
 
 We will consider again consider a batch reaction in a `CSTR` but this time, we will also account for an intermediate state:
 
-$\require{mhchem}$
-$$\ce{A <=>[k_{AB}][k_{BA}] B <=>[k_{BC}][k_{CB}] C}$$
+$$
+\mathrm{A} \xleftrightarrow[k_{BA}]{k_{AB}} \mathrm{B} \xleftrightarrow[k_{CB}]{k_{BC}} \mathrm{C}
+$$
+
 
 ***Task:*** Implement the reaction and plot the results. Assume the following values for the rate constants:
 - $k_{AB} = 0.080~s^{-1}$
@@ -59,7 +61,8 @@ reaction_system.add_reaction(
 
 from CADETProcess.processModel import Cstr
 reactor = Cstr(component_system, 'reactor')
-reactor.V = 1e-6
+reactor.init_liquid_volume = 1e-6
+reactor.const_solid_volume = 0
 reactor.bulk_reaction_model = reaction_system
 reactor.c = [1.0, 0.0, 0.0]
 ```
@@ -81,11 +84,12 @@ process.cycle_time = 100
 
 from CADETProcess.simulator import Cadet
 simulator = Cadet()
-sim_results = simulator.run(process)
+sim_results = simulator.simulate(process)
 _ = sim_results.solution.reactor.outlet.plot()
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 ## Exercise 2: Equilibrium reaction with intermediate state in tubular reactor
 ***Task:*** Implement the reaction in a tubular reactor and plot the results at the outlet, as well as over the length of the column for the last timestep.
 
@@ -99,7 +103,6 @@ For the `TubularReactor` use the following parameters:
 
 
 ***Hint:*** To plot the bulk solution, make sure that you set the `write_solution_bulk` flag in the `TubularReactor`.
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -178,16 +181,28 @@ _ = sim_results.solution.reactor.bulk.plot_at_time(100)
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 ## Bonus Exercise
 
 Try implementing other reaction systems such as:
 
-$\require{mhchem}$
-$$\ce{A + B ->[k_{1}] C}$$
-$$\ce{2 A + B ->[k_{1}] C}$$
-$$\ce{A + B <=>[k_{1}][k_{-1}] C ->[k_{2}] D}$$
-$$\ce{A + B ->[k_{1}] C} \quad \text{and as a parallel reaction} \quad \ce{A + C ->[k_{2}] D}$$
+$$
+\mathrm{A} + \mathrm{B} \xrightarrow{k_{1}} \mathrm{C}
+$$
 
+$$
+2\,\mathrm{A} + \mathrm{B} \xrightarrow{k_{1}} \mathrm{C}
+$$
+
+$$
+\mathrm{A} + \mathrm{B} \xleftrightarrow[k_{-1}]{k_{1}} \mathrm{C} \xrightarrow{k_{2}} \mathrm{D}
+$$
+
+$$
+\mathrm{A} + \mathrm{B} \xrightarrow{k_{1}} \mathrm{C}
+\quad \text{and as a parallel reaction} \quad
+\mathrm{A} + \mathrm{C} \xrightarrow{k_{2}} \mathrm{D}
+$$
 
 ```{code-cell} ipython3
 :tags: [solution]

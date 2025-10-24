@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.18.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -499,4 +499,8 @@ sec.components = ["Salt"]
 sec.y_label = '$c_{salt}$'
 
 _ = simulation_results.solution.column.outlet.plot(secondary_axis=sec)
+```
+
+```{code-cell} ipython3
+
 ```

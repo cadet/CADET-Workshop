@@ -5,18 +5,17 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.18.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
 
-+++
 # Residence Time Distribution - Exercises
 
-
 +++
+
 ## Exercise 1: Step function in CSTR
 
 Analyze how the concentration profile of a `CSTR` reacts to a step function:
@@ -33,7 +32,6 @@ Analyze how the concentration profile of a `CSTR` reacts to a step function:
 
 
 ***Hint:*** Always check the input arguments of our model template functions.
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -57,7 +55,8 @@ inlet.flow_rate = Q
 
 cstr = Cstr(component_system, 'cstr')
 cstr.c = [0]
-cstr.V = V
+cstr.init_liquid_volume = V
+cstr.const_solid_volume = 0
 cstr.flow_rate = Q
 
 outlet = Outlet(component_system, 'outlet')
@@ -96,10 +95,10 @@ simulation_results.solution.cstr.outlet.plot()
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 ## Exercise 2: Step function in Tubular reactor
 
 **Task:** Also analyze the system behaviour of a Tubular reactor for different input profiles (see Exercise 1).
-
 
 ```{code-cell} ipython3
 :tags: [solution]
@@ -162,6 +161,7 @@ simulation_results.solution.pfr.outlet.plot()
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
+
 ## Bonus Exercise
 Many systems can be modelled by a chain of unit operations.
 
@@ -171,9 +171,6 @@ Many systems can be modelled by a chain of unit operations.
 ```
 Try connecting combining both the CSTR with a Tubular reactor and analyze the behavior.
 
-
 ```{code-cell} ipython3
-:tags: [solution]
-
 
 ```
