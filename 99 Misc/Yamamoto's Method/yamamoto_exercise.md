@@ -4,18 +4,22 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.19.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
 
-## Exercise Yamamoto Method
+```{code-cell} ipython3
+%matplotlib inline
+```
+
+# Exercise Yamamoto Method
+
+## Exercise 1
 
 In this exercise the Yamamoto method will be applied and used as model parameter for the linear region of the steric mass action isotherm.
-
-+++
 
 Import the data given in `./experiments/three_proteins` using the following helper function.
 Then, visualize the data.
@@ -28,7 +32,7 @@ from CADETProcess.tools.yamamoto import GradientExperiment
 def create_experiment(file_name, gradient_volume):
     """CSV should have format of [time, salt, protein]."""
 
-    data = np.loadtxt(file_name, delimiter=',')
+    data = np.loadtxt(file_name, delimiter=",")
 
     time = data[:, 0]
     c_salt = data[:, 1]
@@ -40,10 +44,10 @@ def create_experiment(file_name, gradient_volume):
 ```{code-cell} ipython3
 :tags: [solution]
 
-experiment_1 = create_experiment('./experiments/three_proteins/18.8mL.csv', 18.8e-6)
-experiment_2 = create_experiment('./experiments/three_proteins/37.6mL.csv', 37.6e-6)
-experiment_3 = create_experiment('./experiments/three_proteins/56.4mL.csv', 56.4e-6)
-experiment_4 = create_experiment('./experiments/three_proteins/75.2mL.csv', 75.2e-6)
+experiment_1 = create_experiment("./experiments/three_proteins/18.8mL.csv", 18.8e-6)
+experiment_2 = create_experiment("./experiments/three_proteins/37.6mL.csv", 37.6e-6)
+experiment_3 = create_experiment("./experiments/three_proteins/56.4mL.csv", 56.4e-6)
+experiment_4 = create_experiment("./experiments/three_proteins/75.2mL.csv", 75.2e-6)
 
 experiments = [experiment_1, experiment_2, experiment_3, experiment_4]
 ```
@@ -60,17 +64,17 @@ for experiment in experiments:
 Define the parameters given in the table below as variables.
 
 Consider the following parameters:
-- length: $0.1~m$
-- diameter: $7.7~mm$
+- length: $0.1~\text{m}$
+- diameter: $7.7~\text{mm}$
 - bed porosity: $0.36$
-- particle radius: $34 \cdot 10^{-6}~m$
+- particle radius: $34 \times 10^{-6}~\text{m}$
 - particle porosity: $0.85$
 
 ```{code-cell} ipython3
 :tags: [solution]
 
 from CADETProcess.processModel import ComponentSystem
-component_system = ComponentSystem(['Salt', 'A', 'B', 'C'])
+component_system = ComponentSystem(["Salt", "A", "B", "C"])
 
 from CADETProcess.processModel import StericMassAction
 binding_model = StericMassAction(component_system)
@@ -78,13 +82,16 @@ binding_model.adsorption_rate = [1, 1, 1, 1]
 binding_model.desorption_rate = [1, 1, 1, 1]
 binding_model.capacity = 822.5
 binding_model.steric_factor = [0, 0, 0, 0]
+
+binding_model.reference_liquid_phase_conc = 1000
+binding_model.reference_solid_phase_conc = 822.5
 ```
 
 ```{code-cell} ipython3
 :tags: [solution]
 
 from CADETProcess.processModel import LumpedRateModelWithPores
-column = LumpedRateModelWithPores(component_system, 'column')
+column = LumpedRateModelWithPores(component_system, "column")
 column.binding_model = binding_model
 column.length = 0.1
 column.diameter = 0.0077
@@ -122,10 +129,10 @@ Check the output of the parameter estimation and decide which experiment to negl
 ```{code-cell} ipython3
 :tags: [solution]
 
-print(f'logarithm of peak salt concentration for Protein 1: {yamamoto_results.log_c_salt_at_max_M[:, 0]}')
-print(f'logarithm of peak salt concentration for Protein 2: {yamamoto_results.log_c_salt_at_max_M[:, 1]}')
-print(f'logarithm of peak salt concentration for Protein 3: {yamamoto_results.log_c_salt_at_max_M[:, 2]}')
-print(f'equilibrium constant: {yamamoto_results.k_eq}')
+print(f"logarithm of peak salt concentration for Protein 1: {yamamoto_results.log_c_salt_at_max_M[:, 0]}")
+print(f"logarithm of peak salt concentration for Protein 2: {yamamoto_results.log_c_salt_at_max_M[:, 1]}")
+print(f"logarithm of peak salt concentration for Protein 3: {yamamoto_results.log_c_salt_at_max_M[:, 2]}")
+print(f"equilibrium constant: {yamamoto_results.k_eq}")
 ```
 
 Viewing the data, the third entry related to the third experiment does not fit into the ascending sequence for the peak salt concentration. Remove the third experiment from the parameter estimation and redo the estimation. Also, visualize the results.
@@ -146,7 +153,9 @@ print(yamamoto_results_adapted.k_eq)
 yamamoto_results_adapted.plot()
 ```
 
-# Bonus Task
+## Bonus Task
+
+@TODO: Update
 
 Try to build a simple model which reproduces the experimental results.
 The model should consist of an `Inlet`, the column model and an `Outlet`.
@@ -166,10 +175,19 @@ Keep in mind the following steps for creating a model:
 ```{code-cell} ipython3
 from CADETProcess.processModel import Inlet, Outlet
 
-inlet = Inlet(component_system, name='inlet')
+inlet = Inlet(component_system, name="inlet")
 inlet.flow_rate = 8.33e-09
 
-outlet = Outlet(component_system, name='outlet')
+outlet = Outlet(component_system, name="outlet")
+```
+
+Update initial conditions:
+
+```{code-cell} ipython3
+column.q[0] = binding_model.capacity
+column.c = [experiment_1.c_salt_start, 0, 0, 0]
+column.cp = [experiment_1.c_salt_start, 0, 0, 0]
+column.q = [binding_model.capacity, 0, 0, 0]
 ```
 
 ### 2. Construct the flow sheet
@@ -204,18 +222,33 @@ t_cycle = sample_volume/flow_rate + wash_volume/flow_rate + gradient_volume/flow
 
 slope = ((experiment_1.c_salt_end-experiment_1.c_salt_start)/(gradient_volume/flow_rate))
 
-process = Process(flow_sheet, 'LWE_Lysozyme_18_8mL')
+process = Process(flow_sheet, "LWE_Lysozyme_18_8mL")
 process.cycle_time = t_cycle
 
-process.add_event('load', 'flow_sheet.inlet.c', [experiment_1.c_salt_start, 0.2, 0.24, 0.16], 0)
-process.add_event('wash', 'flow_sheet.inlet.c', [experiment_1.c_salt_start, 0, 0, 0], wash_start)
 process.add_event(
-    'grad_start',
-    'flow_sheet.inlet.c',
+    "load",
+    "flow_sheet.inlet.c",
+    [experiment_1.c_salt_start, 0.2, 0.24, 0.16],
+    0,
+)
+process.add_event(
+    "wash",
+    "flow_sheet.inlet.c",
+    [experiment_1.c_salt_start, 0, 0, 0],
+    wash_start,
+)
+process.add_event(
+    "grad_start",
+    "flow_sheet.inlet.c",
     [[experiment_1.c_salt_start, slope], [0, 0], [0, 0], [0, 0]],
     gradient_start
 )
-process.add_event('strip','flow_sheet.inlet.c', [experiment_1.c_salt_end, 0, 0, 0], strip_start)
+process.add_event(
+    "strip",
+    "flow_sheet.inlet.c",
+    [experiment_1.c_salt_end, 0, 0, 0],
+    strip_start,
+)
 ```
 
 ### 7. Simulation and plotting
@@ -224,31 +257,39 @@ process.add_event('strip','flow_sheet.inlet.c', [experiment_1.c_salt_end, 0, 0, 
 from CADETProcess.simulator import Cadet
 
 simulator = Cadet()
-sim_res = simulator.simulate (process)
+sim_res = simulator.simulate(process)
 
 from CADETProcess.plotting import SecondaryAxis
-sec = SecondaryAxis()
-sec.components = ["Salt"]
-sec.y_label = '$c_{Salt}$'
-_ = sim_res.solution.column.outlet.plot(secondary_axis=sec)
+sec = SecondaryAxis(
+    components="Salt",
+    ylabel="$c_{Salt}$"
+)
+_ = sim_res.solution.column.outlet.plot(secondary_axes=sec)
 ```
 
 ### 8. Comparison to experiment
 
 ```{code-cell} ipython3
-from CADETProcess.comparison import Comparator, ReferenceIO
+from CADETProcess.comparison import Comparator
+from CADETProcess.processModel import ComponentSystem
+from CADETProcess.reference import ReferenceIO
 
 comparator = Comparator()
 for i_p in range(experiment_1.n_proteins):
-    Ref_name = 'Protein_'+str(i_p)
-    comparator.add_reference(ReferenceIO(
-        Ref_name, experiment_1.time, experiment_1.c_protein[:,i_p]
-        )
+    reference = ReferenceIO(
+        f"Protein_{i_p}",
+        experiment_1.time,
+        experiment_1.c_protein[:,i_p],
+        flow_rate=flow_rate,
+        component_system=ComponentSystem([component_system.names[i_p+1]]),
     )
+    comparator.add_reference(reference)
     comparator.add_difference_metric(
-        'SSE', ReferenceIO(Ref_name, experiment_1.time, experiment_1.c_protein[:, i_p]),
-        'outlet.outlet', components=component_system.labels[i_p+1]
+        "SSE",
+        reference,
+        "outlet.outlet",
+        components=component_system.names[i_p+1],
     )
 
-comparator.plot_comparison(sim_res, plot_individual=True)
+_ = comparator.plot_comparison(sim_res)
 ```
