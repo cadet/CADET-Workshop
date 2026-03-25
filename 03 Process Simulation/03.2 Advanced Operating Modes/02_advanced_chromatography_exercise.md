@@ -12,13 +12,16 @@ kernelspec:
   name: python3
 ---
 
+```{code-cell} ipython3
+%matplotlib inline
+```
+
 +++ {"slideshow": {"slide_type": "slide"}}
 # Advanced Chromatographic Processes - Exercises
 
-
 ## Exercise 1: Modelling dispersion of valves and tubing
 
-Take the example from the lesson and add tubing using a `TubularReactor` with $L_c = 0.5~m$, $A_c = 1 \cdot 10^{-5}~m^2$, and $D_{ax} = 1 \cdot 10^{-5}~m^2 \cdot s^{-1}$.
+Take the example from the lesson and add tubing using a `TubularReactor` with $L_c = 0.5~\text{m}$, $A_c = 1 \times 10^{-5}~\text{m}^2$, and $\text{D}_{\text{ax}} = 1 \times 10^{-5}~\text{m}^2~s^{-1}$.
 
 ***Task:*** Plot the inlet and outlet of every unit operation and compare the results to a system without any considerations for valving and tubing.
 
@@ -133,7 +136,6 @@ There exist four zones in this system:
 - Dilute: 2 columns in series; reverse flow
 - Elute: 2 Columns in series
 
-
 ```{code-cell} ipython3
 :tags: [solution]
 
@@ -155,7 +157,6 @@ o_product = Outlet(component_system, name='o_product')
 +++ {"slideshow": {"slide_type": "slide"}}
 Now the zones are set up and the reverse flow is set in the dilution zone.
 
-
 ```{code-cell} ipython3
 :tags: [solution]
 
@@ -165,12 +166,10 @@ z_wash = SerialZone(component_system, 'z_wash', 3)
 z_feed = ParallelZone(component_system, 'z_feed', 3)
 z_dilute = SerialZone(component_system, 'z_dilute', 2, flow_direction=-1)
 z_elute = SerialZone(component_system, 'z_elute', 2)
-
 ```
 
 +++ {"slideshow": {"slide_type": "slide"}}
 As in the previous example, the units and zones are added and connected in the CarouselBuilder
-
 
 ```{code-cell} ipython3
 :tags: [solution]
