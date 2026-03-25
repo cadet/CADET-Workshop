@@ -4,19 +4,22 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.19.1
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
 
-+++ {"user_expressions": [], "slideshow": {"slide_type": "slide"}}
+```{code-cell} ipython3
+%matplotlib inline
+```
+
++++ {"slideshow": {"slide_type": "slide"}, "editable": true}
 
 # Yamamoto's Method
 
 Yamamoto's method is a semi-empirical method used for estimating the characteristic charge and equilibrium constant in the stoichiometric displacement model or in the linear region of the steric mass-action model.
-
 To determine the parameters, the salt concentration at which a peak elutes $I_R$ for various gradient slopes is plotted over the normalized gradient slope.
 
 $log(GH) = (\nu+1) \cdot log(I_R) - log(K_{eq} \cdot \lambda^\nu \cdot (\nu+1))$
@@ -35,9 +38,9 @@ For this purpose, a `GradientExperiment` class is provided which takes the follo
 - gradient volume
 
 For the Yamamoto method, at least two experiments are needed for the parameter estiamtion (linear regression).
-However a third experiment is adviced for validation purposes.
+However, a third experiment is advised for validation purposes.
 
-For this tutorial, four experiments are used with two different protein sample.
+For this tutorial, four experiments are used with two different protein samples.
 The data can be found in `./experiments/single_protein`.
 
 +++ {"slideshow": {"slide_type": "slide"}}
@@ -45,7 +48,7 @@ The data can be found in `./experiments/single_protein`.
 ### Note on Experiments
 
 It is important to consider the dead volume between the UV sensor and the conductivity sensor in the experimental system.
-If this is not accounted for, the time offset will lead to inacurate results.
+If this is not accounted for, the time offset will lead to inaccurate results.
 
 In practice, two tracer experiments are required.
 One tracer experiment will produce a signal at the UV sensor, followed by another tracer detected by the conductivity sensor.
@@ -66,7 +69,7 @@ from CADETProcess.tools.yamamoto import GradientExperiment
 def create_experiment(file_name, gradient_volume):
     """CSV should have format of [time, salt, protein]."""
 
-    data = np.loadtxt(file_name, delimiter=',')
+    data = np.loadtxt(file_name, delimiter=",")
 
     time = data[:, 0]
     c_salt = data[:, 1]
@@ -75,10 +78,10 @@ def create_experiment(file_name, gradient_volume):
     return GradientExperiment(time, c_salt, c_protein, gradient_volume)
 
 
-experiment_1 = create_experiment('./experiments/single_protein/18.8mL.csv', 18.8e-6)
-experiment_2 = create_experiment('./experiments/single_protein/37.6mL.csv', 37.6e-6)
-experiment_3 = create_experiment('./experiments/single_protein/56.4mL.csv', 56.4e-6)
-experiment_4 = create_experiment('./experiments/single_protein/75.2mL.csv', 75.2e-6)
+experiment_1 = create_experiment("./experiments/single_protein/18.8mL.csv", 18.8e-6)
+experiment_2 = create_experiment("./experiments/single_protein/37.6mL.csv", 37.6e-6)
+experiment_3 = create_experiment("./experiments/single_protein/56.4mL.csv", 56.4e-6)
+experiment_4 = create_experiment("./experiments/single_protein/75.2mL.csv", 75.2e-6)
 
 experiments = [experiment_1, experiment_2, experiment_3, experiment_4]
 ```
@@ -110,15 +113,15 @@ To run Yamamoto's method, initialize a `ComponentSystem`, a column (any model wi
 For the binding model, only the `capacity` is required.
 
 Consider the following parameters:
-- length: $0.1~m$
-- diameter: $7.7~mm$
+- length: $0.1~\text{m}$
+- diameter: $7.7~\text{mm}$
 - bed porosity: $0.36$
-- particle radius: $34 \cdot 10^{-6}~m$
+- particle radius: $34 \times 10^{-6}~\text{m}$
 - particle porosity: $0.85$
 
 ```{code-cell} ipython3
 from CADETProcess.processModel import ComponentSystem
-component_system = ComponentSystem(['Salt', 'A'])
+component_system = ComponentSystem(["Salt", "A"])
 
 from CADETProcess.processModel import StericMassAction
 binding_model = StericMassAction(component_system)
@@ -131,7 +134,7 @@ binding_model.capacity = 4.7 * 175
 :tags: [solution]
 
 from CADETProcess.processModel import LumpedRateModelWithPores
-column = LumpedRateModelWithPores(component_system, 'column')
+column = LumpedRateModelWithPores(component_system, "column")
 column.binding_model = binding_model
 column.length = 0.1
 column.diameter = 0.0077
@@ -162,19 +165,20 @@ print(yamamoto_results.k_eq)
 yamamoto_results.plot()
 ```
 
-+++ {"user_expressions": []}
++++ {"slideshow": {"slide_type": "slide"}, "editable": true}
 
 ## Bonus: Compare with simulation
+
+@TODO: Update
 
 ```{code-cell} ipython3
 
 ```
 
-+++ {"user_expressions": []}
-
-Besides the visualization of the fitted parameter from the experiments, there is also the option to use the characteristic charge $\nu$ and equilibrium constant $K_{eq}$ in a load wash elution simulation with the steric mass action isotherm. The structure of the model is quite simple as depicted in the figure below. The inlet will be used to modify the concentration in the column. The column is modelled with a general rate model.
-
-![image.png](attachment:329c1a6b-6642-4726-bd59-592ff48c1831.png)
+Besides the visualization of the fitted parameter from the experiments, there is also the option to use the characteristic charge $\nu$ and equilibrium constant $K_{eq}$ in a load wash elution simulation with the steric mass action isotherm.
+The structure of the model is quite simple as depicted in the figure below.
+The inlet will be used to modify the concentration in the column.
+The column is modelled with a general rate model.
 
 ```{code-cell} ipython3
 
