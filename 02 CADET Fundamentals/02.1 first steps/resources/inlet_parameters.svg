@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 770 260" font-family="Helvetica, Arial, sans-serif" font-size="16">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2937"/>
+    </marker>
+    <marker id="axis" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5b6370"/>
+    </marker>
+  </defs>
+
+  <!-- reservoir -->
+  <path d="M40 70 L40 190 Q40 205 55 205 L135 205 Q150 205 150 190 L150 70" fill="none" stroke="#1f2937" stroke-width="2"/>
+  <rect x="42" y="110" width="106" height="93" fill="#dbeafe"/>
+  <text x="95" y="160" text-anchor="middle" font-style="italic">c<tspan font-size="12" dy="4">in</tspan></text>
+  <text x="95" y="232" text-anchor="middle" fill="#5b6370" font-size="14">concentration</text>
+
+  <!-- pump -->
+  <line x1="150" y1="130" x2="190" y2="130" stroke="#1f2937" stroke-width="2"/>
+  <circle cx="215" cy="130" r="25" fill="#ffffff" stroke="#1f2937" stroke-width="2"/>
+  <path d="M203 112 L232 130 L203 148" fill="none" stroke="#1f2937" stroke-width="2"/>
+  <text x="215" y="92" text-anchor="middle" font-style="italic">Q</text>
+  <text x="215" y="182" text-anchor="middle" fill="#5b6370" font-size="14">flow rate</text>
+
+  <!-- to the system -->
+  <line x1="240" y1="130" x2="330" y2="130" stroke="#1f2937" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="285" y="118" text-anchor="middle" font-style="italic">Q c<tspan font-size="12" dy="4">in</tspan></text>
+  <text x="340" y="135" fill="#5b6370" font-size="14">to the column</text>
+
+  <!-- concentration over time -->
+  <line x1="480" y1="200" x2="725" y2="200" stroke="#5b6370" stroke-width="1.5" marker-end="url(#axis)"/>
+  <line x1="480" y1="200" x2="480" y2="50" stroke="#5b6370" stroke-width="1.5" marker-end="url(#axis)"/>
+  <polyline points="480,200 480,100 700,100" fill="none" stroke="#4a7fb5" stroke-width="3"/>
+  <text x="470" y="105" text-anchor="end" font-style="italic">c<tspan font-size="12" dy="4">feed</tspan></text>
+  <text x="470" y="205" text-anchor="end">0</text>
+  <text x="735" y="205" font-style="italic">t</text>
+  <line x1="700" y1="195" x2="700" y2="205" stroke="#5b6370" stroke-width="1.5"/>
+  <text x="480" y="225" text-anchor="middle" font-size="14">0</text>
+  <text x="700" y="225" text-anchor="middle" font-size="14">cycle time</text>
+  <text x="590" y="85" text-anchor="middle" fill="#4a7fb5" font-style="italic">c<tspan font-size="12" dy="4">in</tspan><tspan dy="-4">(t)</tspan></text>
+  <text x="600" y="40" text-anchor="middle" fill="#5b6370" font-size="14">constant feed from t = 0</text>
+</svg>

@@ -27,7 +27,7 @@ For this purpuse, make sure, [git](https://git-scm.com/downloads) is installed.
 
 From a `git bash` navigate to to where you want to store the tutorials and run
 ```
-git clone https://github.com/modsim/CADET-Process_Tutorial
+git clone https://github.com/cadet/CADET-Workshop
 ```
 
 Then, from an `Anaconda Prompt`, `cd` into the directory and install all the requirements by running
@@ -50,7 +50,7 @@ In case you are new to `Python` and `jupyter`, we also included a small tutorial
 
 
 ## Fixing potential problems.
-- If you get the following error `The code execution cannot proceed because VCRUNTIME140_1.dll was not found. Reinstalling the program may fix this problem.`, please visit https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads and install the latest Microsoft Visual C++ Redistributable.
+- If you get the following error `The code execution cannot proceed because VCRUNTIME140_1.dll was not found. Reinstalling the program may fix this problem.`, please visit https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist and install the latest Microsoft Visual C++ Redistributable.
 - Some of the notebooks include interactive graphs. To enable them, please open an Anaconda prompt and run:
     - For JupyterLab 2.0+
       ```
