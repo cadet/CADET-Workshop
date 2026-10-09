@@ -2,19 +2,22 @@ name: cadet_workshop
 channels:
   - conda-forge
 dependencies:
-  - python=3.14
-  - cadet>=5.1.0,<6.0
+  - python=3.12
+  - cadet=5.1.1
+  - anywidget
   - gitpython
   - ipympl
-  - jupyterlab
-  - jupyterlab_myst
+  - ipywidgets
+  - joblib
+  - jupyterlab=4.5
+  - jupyterlab-myst
   - jupyterlab-slideshow
   - jupytext
-  - pre-commit
   - openpyxl
+  - pathos
   - pip
+  - pre-commit
   - pip:
-    - cadet-process>=0.11.1
+    - git+https://github.com/fau-advanced-separations/CADET-Process.git@a65245e3c0cae8d885a805162fc6ee21201f6eca
+    - git+https://github.com/cadet/CADET-GUI.git@c73fd178066936354a9421925fab0b067f031c20
     - nbtoolbelt
-    - ipympl
-    - ipywidgets

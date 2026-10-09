@@ -332,7 +332,57 @@ def convert_ipynb_to_myst_md(ipynb_file_path):
     return run_command(f'jupytext --to md:myst "{ipynb_file_path}"')
 
 
-def setup_teaching_copy(new_repo_dir="CADET-Workshop-teaching"):
+def lesson_files(repo_root):
+    """List the MyST lesson files of the repository.
+
+    Lessons are the markdown files inside a subdirectory. Markdown files at the repository
+    root (README, plans, notes) and files containing ``README`` in their path are not lessons.
+
+    Parameters
+    repo_root : Path
+        Root of the working tree.
+
+    Returns
+    list of Path
+        Lesson files, sorted.
+    """
+    return sorted(
+        m for m in repo_root.glob("**/*.md")
+        if m.parent != repo_root and "README" not in m.as_posix() and ".git" not in m.parts
+    )
+
+
+def convert_lessons(repo_root, n_cores=1):
+    """Convert all lessons to notebooks and remove the markdown sources from git.
+
+    Parameters
+    repo_root : Path
+        Root of the working tree.
+    n_cores : int, default 1
+        Number of worker processes used for the conversion.
+
+    Returns
+    list of Path
+        The generated notebooks, one per lesson.
+    """
+    lessons = lesson_files(repo_root)
+
+    run_func_over_args_list(
+        func=convert_myst_to_ipynb,
+        args_list=[m.as_posix() for m in lessons],
+        n_cores=n_cores,
+    )
+
+    for m in lessons:
+        try:
+            run_command(f'git rm --quiet -- "{m.as_posix()}"')
+        except subprocess.CalledProcessError:
+            pass
+
+    return [m.with_suffix(".ipynb") for m in lessons]
+
+
+def setup_teaching_copy(new_repo_dir="CADET-Workshop-teaching", teaching_branch="teaching"):
     """Create a sibling repository clone and check out the teaching branch.
 
     A clean copy is created next to the current repository. If the target directory exists,
@@ -341,6 +391,8 @@ def setup_teaching_copy(new_repo_dir="CADET-Workshop-teaching"):
     Parameters
     new_repo_dir : str, default "CADET-Workshop-teaching"
         Directory name for the new clone relative to the parent of the current repository root.
+    teaching_branch : str, default "teaching"
+        Branch to check out in the clone.
 
     Raises
     git.GitCommandError
@@ -355,16 +407,18 @@ def setup_teaching_copy(new_repo_dir="CADET-Workshop-teaching"):
         delete_dir_contents(new_repo_dir)
 
     new_repo = git.Repo.clone_from(repo_root.as_posix(), new_repo_dir)
-    new_repo.git.checkout("teaching")
+    new_repo.git.checkout(teaching_branch)
 
 
 # --------------- core actions ---------------
 
-def create_solution(run=False, commit=False, push=False, n_cores=1, on_fail_restore_dev=False):
-    """Create solution branch artifacts from markdown on dev.
+def create_solution(
+        run=False, commit=False, push=False, n_cores=1, on_fail_restore_dev=False,
+        source_branch="dev", solution_branch="solution"):
+    """Create solution branch artifacts from markdown on the source branch.
 
-    This function checks out the solution branch, aligns it to dev, converts markdown files to
-    notebooks, optionally executes notebooks, removes markdown files except README, and
+    This function resets the solution branch to the source branch, converts lessons to
+    notebooks, optionally executes notebooks, removes the lesson markdown files, and
     optionally commits and pushes the results.
 
     Parameters
@@ -377,49 +431,37 @@ def create_solution(run=False, commit=False, push=False, n_cores=1, on_fail_rest
     n_cores : int, default 1
         Number of worker processes used when executing notebooks.
     on_fail_restore_dev : bool, default False
-        If True and an error occurs, attempt to restore the index and working tree on dev.
+        If True and an error occurs, attempt to restore the index and working tree.
+    source_branch : str, default "dev"
+        Branch holding the markdown lessons.
+    solution_branch : str, default "solution"
+        Branch to (re)create. It is created if it does not exist.
 
     Raises
     Exception
         Any exception encountered during processing is re-raised after cleanup.
 
     Notes
-    If the current branch is not dev, the function prints a message and returns without action.
-    Local uncommitted changes are temporarily stashed and restored at the end.
+    If the current branch is not the source branch, the function prints a message and returns
+    without action. Local uncommitted changes are temporarily stashed and restored at the end.
     """
     repo = git.Repo(search_parent_directories=True)
     current_branch = repo.active_branch.name
     repo_root = Path(repo.working_tree_dir)
 
-    if current_branch != "dev":
-        print("Not on dev branch. Skipping create_solution script.")
+    if current_branch != source_branch:
+        print(f"Not on {source_branch} branch. Skipping create_solution script.")
         return
 
     stashed = False
     try:
         stashed = stash_if_dirty(repo)
 
-        repo.git.checkout("solution")
-        run_command("git reset --hard dev")
+        repo.git.checkout("-B", solution_branch, source_branch)
 
-        myst_files = list(repo_root.glob("**/*.md"))
-
-        run_func_over_args_list(
-            func=convert_myst_to_ipynb,
-            args_list=[m.as_posix() for m in myst_files],
-            n_cores=n_cores,
-        )
-
-        for m in myst_files:
-            if "README" in m.as_posix():
-                continue
-            try:
-                run_command(f'git rm --quiet -- "{m.as_posix()}"')
-            except subprocess.CalledProcessError:
-                pass
+        ipynb_files = convert_lessons(repo_root, n_cores)
 
         if run:
-            ipynb_files = list(repo_root.glob("**/*.ipynb"))
             nbtoolbelt_config_path = f"{repo_root}/.nbtoolbelt.json"
             run_func_over_args_list(
                 func=run_notebook,
@@ -432,7 +474,7 @@ def create_solution(run=False, commit=False, push=False, n_cores=1, on_fail_rest
             run_command('git commit -m "Update solution"')
 
         if push:
-            run_command("git push --force-with-lease --set-upstream origin solution")
+            run_command(f"git push --force-with-lease --set-upstream origin {solution_branch}")
 
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -445,18 +487,20 @@ def create_solution(run=False, commit=False, push=False, n_cores=1, on_fail_rest
         raise
     finally:
         try:
-            repo.git.checkout("dev")
+            repo.git.checkout(source_branch)
         except git.GitCommandError as e:
             print(e)
         pop_stash_safely(repo, stashed)
 
 
-def create_teaching(commit=False, push=False, n_cores=1, on_fail_restore_dev=False):
-    """Create teaching branch artifacts from markdown on dev and keep punched notebooks.
+def create_teaching(
+        commit=False, push=False, n_cores=1, on_fail_restore_dev=False,
+        source_branch="dev", teaching_branch="teaching"):
+    """Create teaching branch artifacts from markdown on the source branch.
 
-    This function checks out the teaching branch, aligns it to dev, converts markdown files to
-    notebooks, runs ``nbtb punch`` on the notebooks, removes markdown files except README,
-    and optionally commits and pushes the results. Notebooks are kept on the teaching branch.
+    This function resets the teaching branch to the source branch, converts lessons to
+    notebooks, runs ``nbtb punch`` on the notebooks, removes the lesson markdown files, and
+    optionally commits and pushes the results.
 
     Parameters
     commit : bool, default False
@@ -466,48 +510,36 @@ def create_teaching(commit=False, push=False, n_cores=1, on_fail_restore_dev=Fal
     n_cores : int, default 1
         Number of worker processes used when punching notebooks.
     on_fail_restore_dev : bool, default False
-        If True and an error occurs, attempt to restore the index and working tree on dev.
+        If True and an error occurs, attempt to restore the index and working tree.
+    source_branch : str, default "dev"
+        Branch holding the markdown lessons.
+    teaching_branch : str, default "teaching"
+        Branch to (re)create. It is created if it does not exist.
 
     Raises
     Exception
         Any exception encountered during processing is re-raised after cleanup.
 
     Notes
-    If the current branch is not dev, the function prints a message and returns without action.
-    Local uncommitted changes are temporarily stashed and restored at the end.
+    If the current branch is not the source branch, the function prints a message and returns
+    without action. Local uncommitted changes are temporarily stashed and restored at the end.
     """
     repo = git.Repo(search_parent_directories=True)
     current_branch = repo.active_branch.name
     repo_root = Path(repo.working_tree_dir)
 
-    if current_branch != "dev":
-        print("Not on dev branch. Skipping create_teaching script.")
+    if current_branch != source_branch:
+        print(f"Not on {source_branch} branch. Skipping create_teaching script.")
         return
 
     stashed = False
     try:
         stashed = stash_if_dirty(repo)
 
-        repo.git.checkout("teaching")
-        run_command("git reset --hard dev")
+        repo.git.checkout("-B", teaching_branch, source_branch)
 
-        myst_files = list(repo_root.glob("**/*.md"))
+        ipynb_files = convert_lessons(repo_root, n_cores)
 
-        run_func_over_args_list(
-            func=convert_myst_to_ipynb,
-            args_list=[m.as_posix() for m in myst_files],
-            n_cores=n_cores,
-        )
-
-        for m in myst_files:
-            if "README" in m.as_posix():
-                continue
-            try:
-                run_command(f'git rm --quiet -- "{m.as_posix()}"')
-            except subprocess.CalledProcessError:
-                pass
-
-        ipynb_files = list(repo_root.glob("**/*.ipynb"))
         nbtoolbelt_config_path = f"{repo_root}/.nbtoolbelt.json"
         run_func_over_args_list(
             func=punch_notebook,
@@ -528,7 +560,7 @@ def create_teaching(commit=False, push=False, n_cores=1, on_fail_restore_dev=Fal
                 pass
 
         if push:
-            run_command("git push --force-with-lease --set-upstream origin teaching")
+            run_command(f"git push --force-with-lease --set-upstream origin {teaching_branch}")
 
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -541,7 +573,7 @@ def create_teaching(commit=False, push=False, n_cores=1, on_fail_restore_dev=Fal
         raise
     finally:
         try:
-            repo.git.checkout("dev")
+            repo.git.checkout(source_branch)
         except git.GitCommandError as e:
             print(e)
         pop_stash_safely(repo, stashed)
@@ -549,28 +581,36 @@ def create_teaching(commit=False, push=False, n_cores=1, on_fail_restore_dev=Fal
 
 # --------------- cli ---------------
 
-def main(**kwargs):
+def main(argv=None, **kwargs):
     """Command line entry point for post commit tasks.
 
     The function parses command line arguments, overlays provided keyword arguments, and runs
     the solution and teaching creation workflows.
 
     Parameters
+    argv : list of str, optional
+        Arguments to parse instead of ``sys.argv``.
     **kwargs
         Optional keyword arguments to override parsed arguments. Only non None values are applied.
 
     Notes
     The default behavior is to not execute notebooks. The number of cores is parsed from the
     ``--n_cores`` argument and falls back to 1 on invalid input.
+
+    To preview a branch other than dev without touching the live branches, run from that branch:
+    ``--source <branch> --teaching_branch teaching-preview --solution_branch solution-preview``.
     """
     parser = argparse.ArgumentParser(description="Perform post commit tasks.")
     parser.add_argument("--run", action="store_true", help="Run nbtb on notebooks for solution.")
     parser.add_argument("--commit", action="store_true", help="Commit changes.")
     parser.add_argument("--push", action="store_true", help="Push changes to remote.")
-    parser.add_argument("--on_fail_restore_dev", action="store_true", help="Reset to dev branch on error.")
+    parser.add_argument("--on_fail_restore_dev", action="store_true", help="Reset to source branch on error.")
     parser.add_argument("--n_cores", help="Number of cores to use.")
+    parser.add_argument("--source", default="dev", help="Branch holding the markdown lessons.")
+    parser.add_argument("--teaching_branch", default="teaching", help="Teaching branch to create.")
+    parser.add_argument("--solution_branch", default="solution", help="Solution branch to create.")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     for kwarg_key, kwarg_value in kwargs.items():
         if kwarg_value is None:
@@ -583,8 +623,15 @@ def main(**kwargs):
     except ValueError:
         n_cores = 1
 
-    create_solution(args.run, args.commit, args.push, n_cores, args.on_fail_restore_dev)
-    create_teaching(args.commit, args.push, n_cores, args.on_fail_restore_dev)
-    
+    create_solution(
+        args.run, args.commit, args.push, n_cores, args.on_fail_restore_dev,
+        source_branch=args.source, solution_branch=args.solution_branch,
+    )
+    create_teaching(
+        args.commit, args.push, n_cores, args.on_fail_restore_dev,
+        source_branch=args.source, teaching_branch=args.teaching_branch,
+    )
+
+
 if __name__ == "__main__":
     main()
