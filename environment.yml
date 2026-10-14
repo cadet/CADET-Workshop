@@ -9,7 +9,7 @@ dependencies:
   - ipympl
   - ipywidgets
   - joblib
-  - jupyterlab=4.5
+  - jupyterlab=4.6
   - jupyterlab-myst
   - jupyterlab-slideshow
   - jupytext

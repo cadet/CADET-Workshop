@@ -43,10 +43,29 @@ Activate it using the following command
 conda activate cadet
 ```
 
+## Workshop structure
+
+Chapters contain numbered topics. A lesson and its exercises share the same topic number and name. The `a` / `b` markers put the lesson before the exercises; the final word states their role.
+
+```text
+02 CADET Fundamentals/
+  02.3 Inlet Profiles/
+    02.3a_inlet_profiles_lesson.md
+    02.3b_inlet_profiles_exercises.md
+```
+
+The source branch keeps `.md` files as the ground truth. Generate and test `.ipynb` files in temporary directories, then delete them. The generated `teaching` and `solution` branches publish `.ipynb` files. Topics without a separate exercise notebook contain only a lesson. Chapter `00` is optional Python preparation; `99` contains additional examples. The [GUI Workbench](<99 Misc/99.2 GUI Workbench/99.2a_gui_workbench_lesson.md>) is available there for optional process setup and code export. [99.3 Reactions](<99 Misc/99.3 Reactions/>) contains the optional batch-CSTR excursion and its exercises.
+
+Each lesson and exercise begins with a contents overview and its introduced or practised concepts and unit operations. **Python used** lists the concrete coding skills involved. **Tools** identifies CADET-Process (Python), CADET-GUI widgets or other interactive controls. Widget roles follow the CADET-GUI name directly.
+
+Blue **notes** give context, green **tips** guide actions, and amber **warnings** flag common pitfalls.
+
+Shared GUI setup for the early lessons lives in [lesson_setup.py](<02 CADET Fundamentals/resources/first_steps/lesson_setup.py>). Solution-tagged calls populate completed checkpoints; teaching removes those calls. The Python examples remain in the notebooks.
+
 ## Getting started
 Fire up a `jupyter-lab` and get started with the Tutorials.
 
-In case you are new to `Python` and `jupyter`, we also included a small tutorial (`00_Introduction_Python`) which covers the necessary basics for the tutorials.
+The optional [Python preparation](<00 Python Preparation/>) chapter covers the basics needed for the workshop.
 
 
 ## Fixing potential problems.

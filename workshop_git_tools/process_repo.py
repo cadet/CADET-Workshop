@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import shutil
 from abc import abstractmethod
@@ -275,7 +276,13 @@ def convert_myst_to_ipynb(myst_file_path):
     """
     if "README" in myst_file_path:
         return
-    return run_command(f'jupytext --to ipynb "{myst_file_path}"')
+    result = run_command(f'jupytext --to ipynb "{myst_file_path}"')
+    # Published notebooks should save as notebooks, without recreating source Markdown.
+    notebook_path = Path(myst_file_path).with_suffix(".ipynb")
+    notebook = json.loads(notebook_path.read_text())
+    notebook.setdefault("metadata", {}).setdefault("jupytext", {})["formats"] = "ipynb"
+    notebook_path.write_text(json.dumps(notebook, indent=1, ensure_ascii=False) + "\n")
+    return result
 
 
 def punch_notebook(ipynb_file_path, nbtoolbelt_config_path):
@@ -336,7 +343,8 @@ def lesson_files(repo_root):
     """List the MyST lesson files of the repository.
 
     Lessons are the markdown files inside a subdirectory. Markdown files at the repository
-    root (README, plans, notes) and files containing ``README`` in their path are not lessons.
+    root (README, plans, notes), files containing ``README`` in their path, and notebook
+    checkpoints are not lessons.
 
     Parameters
     repo_root : Path
@@ -348,7 +356,8 @@ def lesson_files(repo_root):
     """
     return sorted(
         m for m in repo_root.glob("**/*.md")
-        if m.parent != repo_root and "README" not in m.as_posix() and ".git" not in m.parts
+        if m.parent != repo_root and "README" not in m.as_posix()
+        and ".git" not in m.parts and ".ipynb_checkpoints" not in m.parts
     )
 
 
