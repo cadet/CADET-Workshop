@@ -56,6 +56,16 @@ Chapters contain numbered topics. A lesson and its exercises share the same topi
 
 The source branch keeps `.md` files as the ground truth. Generate and test `.ipynb` files in temporary directories, then delete them. The generated `teaching` and `solution` branches publish `.ipynb` files. Topics without a separate exercise notebook contain only a lesson. Chapter `00` is optional Python preparation; `99` contains additional examples. The [GUI Workbench](<99 Misc/99.2 GUI Workbench/99.2a_gui_workbench_lesson.md>) is available there for optional process setup and code export. [99.3 Reactions](<99 Misc/99.3 Reactions/>) contains the optional batch-CSTR excursion and its exercises.
 
+The main sequence after Process Simulation is **04 Characterization and Optimization**:
+
+1. **04.1 Optimization Essentials:** introduce the concepts through minimizing a tracer-fitting error and maximizing productivity under a purity constraint.
+2. **04.2 Parameter Fitting:** fit tracer data with the estimation GUI, then connect references, comparisons and simulations for a full-curve Python fit.
+3. **04.3 Characterization Workflow:** carry accepted system parameters into a column fit.
+4. **04.4 Fractionation:** define product pools and assess separation performance.
+5. **04.5 Process Optimization:** improve operating conditions using the characterized model.
+
+Detailed optimization examples are optional reference material in [99.4 Optimization Basics](<99 Misc/99.4 Optimization Basics/>) and [99.5 Advanced Optimization](<99 Misc/99.5 Advanced Optimization/>).
+
 Each lesson and exercise begins with a contents overview and its introduced or practised concepts and unit operations. **Python used** lists the concrete coding skills involved. **Tools** identifies CADET-Process (Python), CADET-GUI widgets or other interactive controls. Widget roles follow the CADET-GUI name directly.
 
 Blue **notes** give context, green **tips** guide actions, and amber **warnings** flag common pitfalls.
