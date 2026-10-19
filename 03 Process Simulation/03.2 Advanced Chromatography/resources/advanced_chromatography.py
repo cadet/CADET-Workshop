@@ -1,8 +1,66 @@
-"""Supplied column setup and collection plots for the SMB/carousel examples."""
+"""Supplied models and collection plots for the valve, SMB and carousel examples."""
 
 import numpy as np
 import matplotlib.pyplot as plt
 from IPython.display import Markdown, display
+
+
+def valve_process():
+    """Return the lesson's Example 1: feed and eluent → valve (Cstr) → Langmuir column → outlet.
+
+    Feed (10 mM A and B) flows for the first 60 s, then eluent, at 1 mL/min for 20 min.
+    """
+    from CADETProcess.processModel import (
+        ComponentSystem, Cstr, FlowSheet, Inlet, Langmuir, LumpedRateModelWithPores, Outlet,
+        Process,
+    )
+
+    Q = 1e-6 / 60  # 1 mL/min
+    component_system = ComponentSystem(["A", "B"])
+
+    binding_model = Langmuir(component_system, name="langmuir")
+    binding_model.is_kinetic = False
+    binding_model.adsorption_rate = [0.02, 0.03]
+    binding_model.desorption_rate = [1, 1]
+    binding_model.capacity = [100, 100]
+
+    feed = Inlet(component_system, name="feed")
+    feed.c = [10, 10]
+    eluent = Inlet(component_system, name="eluent")
+    eluent.c = [0, 0]
+
+    valve = Cstr(component_system, "valve")
+    valve.init_liquid_volume = 1e-6
+    valve.const_solid_volume = 0
+    valve.flow_rate = Q
+
+    column = LumpedRateModelWithPores(component_system, "column")
+    column.binding_model = binding_model
+    column.length = 0.1
+    column.diameter = 0.01
+    column.bed_porosity = 0.37
+    column.particle_radius = 4.5e-5
+    column.particle_porosity = 0.33
+    column.axial_dispersion = 2.0e-7
+    column.film_diffusion = [1e-4, 1e-4]
+
+    outlet = Outlet(component_system, name="outlet")
+
+    flow_sheet = FlowSheet(component_system)
+    for unit in (feed, eluent, valve, column, outlet):
+        flow_sheet.add_unit(unit)
+    flow_sheet.add_connection(feed, valve)
+    flow_sheet.add_connection(eluent, valve)
+    flow_sheet.add_connection(valve, column)
+    flow_sheet.add_connection(column, outlet)
+
+    process = Process(flow_sheet, "batch elution")
+    process.cycle_time = 1200
+    process.add_event("feed_on", "flow_sheet.feed.flow_rate", Q, 0)
+    process.add_event("feed_off", "flow_sheet.feed.flow_rate", 0.0, 60)
+    process.add_event("eluent_off", "flow_sheet.eluent.flow_rate", 0.0, 0)
+    process.add_event("eluent_on", "flow_sheet.eluent.flow_rate", Q, 60)
+    return process
 
 
 def show_smb_collection(raffinate, extract, feed):

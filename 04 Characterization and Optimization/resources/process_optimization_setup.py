@@ -99,7 +99,8 @@ def plot_feed_cycle(process):
 
 
 def plot_process_comparison(baseline_settings, selected_settings,
-                            baseline_fractionation, selected_fractionation):
+                            baseline_fractionation, selected_fractionation,
+                            required_purity=0.95):
     """Compare actual operating settings and collected-product performance."""
     fig = plt.figure(figsize=(10, 6), layout="constrained")
     grid = fig.add_gridspec(2, 3, height_ratios=[1, 1.8])
@@ -132,7 +133,8 @@ def plot_process_comparison(baseline_settings, selected_settings,
         ax.set(title=title, ylabel=unit, xticks=positions, xticklabels=names)
         ax.spines[["top", "right"]].set_visible(False)
         if title == "Pool purity":
-            ax.axhline(95, color="#b04a43", linestyle="--", label="95% required")
+            ax.axhline(100 * required_purity, color="#b04a43", linestyle="--",
+                       label=f"{100 * required_purity:.0f}% required")
             ax.set_ylim(0, 115)
         elif title == "Recovery":
             ax.set_ylim(0, 108)
