@@ -19,5 +19,5 @@ dependencies:
   - pre-commit
   - pip:
     - git+https://github.com/fau-advanced-separations/CADET-Process.git@a65245e3c0cae8d885a805162fc6ee21201f6eca
-    - git+https://github.com/cadet/CADET-GUI.git@af7f7fd7ec23fe9999de69ebe9e4401feb534762
+    - git+https://github.com/cadet/CADET-GUI.git@289901c3993487d654c9223017315c01a54d1093
     - nbtoolbelt
