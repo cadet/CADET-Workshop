@@ -259,30 +259,6 @@ def rtd_bypass_widget():
     return view
 
 
-def rtd_python_starter():
-    """Supply the familiar tracer, inlet, outlet and unconnected flow sheet."""
-    from CADETProcess.processModel import Inlet, Outlet
-
-    components = ComponentSystem(["Tracer"])
-    inlet = Inlet(components, "inlet")
-    inlet.c = 0
-    inlet.flow_rate = 1e-7
-    outlet = Outlet(components, "outlet")
-    sheet = FlowSheet(components, "flow_sheet")
-    sheet.add_unit(inlet)
-    sheet.add_unit(outlet)
-    return components, inlet, outlet, sheet
-
-
-def rtd_pulse_process(flow_sheet):
-    """Supply the 5 s tracer pulse and 300 s observation period."""
-    process = Process(flow_sheet, "system")
-    process.cycle_time = 300
-    process.add_event("pulse_on", "flow_sheet.inlet.c", 1, 0)
-    process.add_event("pulse_off", "flow_sheet.inlet.c", 0, 5)
-    return process
-
-
 def rtd_system_model(name="system", include_mixer=True):
     """Create the lab-scale column-bypass tracer experiment."""
     import numpy as np

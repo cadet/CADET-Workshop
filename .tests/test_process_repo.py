@@ -45,7 +45,8 @@ class Test_Workshop_Tools(unittest.TestCase):
         # Preserve starters and widgets, not only the solution-tagged answers.
         expected_cells = {
             lesson: [
-                (cell.cell_type, cell.source, cell.metadata.get("tags", []))
+                (cell.cell_type, cell.source, cell.metadata.get("tags", []),
+                 process_repo.punch_placeholder(cell))
                 for cell in jupytext.read(lesson).cells
             ]
             for lesson in lessons
@@ -79,18 +80,19 @@ class Test_Workshop_Tools(unittest.TestCase):
                 cells = published["cells"]
                 expected = expected_cells[lesson]
                 self.assertEqual(len(cells), len(expected), notebook)
-                for cell, (cell_type, source, tags) in zip(cells, expected):
+                for cell, (cell_type, source, tags, placeholder) in zip(cells, expected):
                     self.assertEqual(cell["cell_type"], cell_type, notebook)
                     self.assertEqual(cell.get("metadata", {}).get("tags", []), tags, notebook)
-                    expected_source = "" if punched and "solution" in tags else source
+                    expected_source = placeholder if punched and "solution" in tags else source
                     self.assertEqual("".join(cell["source"]), expected_source, notebook)
                 sources = solution_sources(notebook)
                 if not sources:
                     continue
                 if punched:
-                    self.assertTrue(all(s == "" for s in sources), notebook)
+                    # At most a one-line hint remains of each answer.
+                    self.assertTrue(all(len(s.splitlines()) <= 1 for s in sources), notebook)
                 else:
-                    self.assertTrue(any(s != "" for s in sources), notebook)
+                    self.assertTrue(any(s.strip() for s in sources), notebook)
             self.assertEqual(sorted(p.name for p in TMP_REPO.glob("*.md")), root_docs)
             tracked = self.repo.git.ls_files().splitlines()
             self.assertFalse([f for f in tracked if ".ipynb_checkpoints" in f])

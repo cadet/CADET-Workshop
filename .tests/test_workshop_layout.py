@@ -43,7 +43,10 @@ class TestWorkshopLayout(unittest.TestCase):
                 self.assertEqual(notebook.cells[0].cell_type, "markdown")
                 self.assertIn("Shift+Enter", notebook.cells[0].source)
                 for index, cell in enumerate(notebook.cells):
-                    self.assertFalse(cell.metadata.get("jupyter", {}).get("source_hidden", False))
+                    # Solution-only checkpoints (empty on teaching) may hide their source.
+                    checkpoint = "solution" in cell.metadata.get("tags", [])
+                    if not checkpoint:
+                        self.assertFalse(cell.metadata.get("jupyter", {}).get("source_hidden", False))
                     self.assertFalse(cell.metadata.get("jupyter", {}).get("outputs_hidden", False))
                     for flag in ["hide_input", "hide_output", "inputHidden", "outputHidden", "hidden", "collapsed"]:
                         self.assertFalse(cell.metadata.get(flag, False))

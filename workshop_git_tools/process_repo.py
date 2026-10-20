@@ -285,8 +285,41 @@ def convert_myst_to_ipynb(myst_file_path):
     return result
 
 
+DEFAULT_CODE_PLACEHOLDER = "# Your code here\n"
+
+
+def is_solution_cell(cell):
+    """Return whether a notebook cell is tagged ``solution``."""
+    return "solution" in cell.get("metadata", {}).get("tags", [])
+
+
+def punch_placeholder(cell):
+    """Return the source a punched solution cell keeps on the teaching branch.
+
+    Hidden cells are checkpoints that only fill widgets on the solution branch; they stay
+    empty. A code cell whose first line is a comment keeps that line as a hint, e.g.
+    ``# Process setup``. Other code cells get a general placeholder, so the empty cell
+    remains easy to find and click in the slideshow.
+
+    Parameters
+    cell : dict
+        Notebook cell before punching.
+
+    Returns
+    str
+        Source of the punched cell.
+    """
+    if cell.get("metadata", {}).get("jupyter", {}).get("source_hidden"):
+        return ""
+    if cell.get("cell_type") != "code":
+        return ""
+    source = cell["source"] if isinstance(cell["source"], str) else "".join(cell["source"])
+    first_line = source.lstrip("\n").split("\n", 1)[0]
+    return first_line + "\n" if first_line.startswith("#") else DEFAULT_CODE_PLACEHOLDER
+
+
 def punch_notebook(ipynb_file_path, nbtoolbelt_config_path):
-    """Execute ``nbtb punch`` on a notebook.
+    """Execute ``nbtb punch`` on a notebook and insert the placeholders.
 
     Parameters
     ipynb_file_path : str or Path
@@ -298,11 +331,22 @@ def punch_notebook(ipynb_file_path, nbtoolbelt_config_path):
     subprocess.CompletedProcess
         The completed process object from the command.
     """
-    nb_dir = Path(ipynb_file_path).parent
-    return run_command(
+    import nbformat
+
+    path = Path(ipynb_file_path)
+    original = nbformat.read(path, as_version=4)
+    placeholders = [punch_placeholder(cell) for cell in original.cells if is_solution_cell(cell)]
+    result = run_command(
         f'nbtb punch --config "{nbtoolbelt_config_path}" "{ipynb_file_path}"',
-        cwd=nb_dir
+        cwd=path.parent
     )
+    punched = nbformat.read(path, as_version=4)
+    solution_cells = [cell for cell in punched.cells if is_solution_cell(cell)]
+    assert len(solution_cells) == len(placeholders), path
+    for cell, placeholder in zip(solution_cells, placeholders):
+        cell.source = placeholder
+    nbformat.write(punched, path)
+    return result
 
 
 def run_notebook(ipynb_file_path, nbtoolbelt_config_path):
