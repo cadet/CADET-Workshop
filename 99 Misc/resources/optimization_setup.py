@@ -8,21 +8,20 @@ from CADETProcess.processModel import (
 
 def tracer_delay_process(name, pulse_length=5):
     """Build an independent copy of the mixer-and-tubing pulse experiment."""
-    components = ComponentSystem(["Tracer"])
-    inlet = Inlet(components, "inlet")
+    component_system = ComponentSystem(["Tracer"])
+    inlet = Inlet(component_system, "inlet")
     inlet.flow_rate = 1e-7  # 6 mL/min
     inlet.c = 0
-    mixer = Cstr(components, "mixer")
+    mixer = Cstr(component_system, "mixer")
     mixer.init_liquid_volume = 1e-6  # 1 mL
     mixer.const_solid_volume = 0
-    mixer.flow_rate = inlet.flow_rate
-    tubing = TubularReactor(components, "tubing")
+    tubing = TubularReactor(component_system, "tubing")
     tubing.length = 1
     tubing.diameter = np.sqrt(4 * 2e-6 / np.pi)  # 2 mL at 1 m length
     tubing.axial_dispersion = 1e-8
     tubing.discretization.ncol = 20
-    outlet = Outlet(components, "outlet")
-    sheet = FlowSheet(components, "flow_sheet")
+    outlet = Outlet(component_system, "outlet")
+    sheet = FlowSheet(component_system, "flow_sheet")
     sheet.add_unit(inlet)
     sheet.add_unit(mixer)
     sheet.add_unit(tubing)

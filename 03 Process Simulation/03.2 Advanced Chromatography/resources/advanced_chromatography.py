@@ -32,7 +32,6 @@ def valve_process():
     valve = Cstr(component_system, "valve")
     valve.init_liquid_volume = 1e-6
     valve.const_solid_volume = 0
-    valve.flow_rate = Q
 
     column = LumpedRateModelWithPores(component_system, "column")
     column.binding_model = binding_model
@@ -107,8 +106,8 @@ def carousel_column_template():
         ComponentSystem, StericMassAction, LumpedRateModelWithoutPores,
     )
 
-    components = ComponentSystem(["Salt", "Impurity", "Target"])
-    binding = StericMassAction(components, "SMA")
+    component_system = ComponentSystem(["Salt", "Impurity", "Target"])
+    binding = StericMassAction(component_system, "SMA")
     binding.is_kinetic = True
     # Lists follow Salt, Impurity, Target; salt rate/steric zeros are placeholders.
     binding.adsorption_rate = [0, 0.001, 0.3]
@@ -119,7 +118,7 @@ def carousel_column_template():
     binding.reference_liquid_phase_conc = 300
     binding.reference_solid_phase_conc = 225
 
-    column = LumpedRateModelWithoutPores(components, "master_column")
+    column = LumpedRateModelWithoutPores(component_system, "master_column")
     column.length = 0.1
     column.diameter = 0.01
     column.total_porosity = 0.4
@@ -128,7 +127,7 @@ def carousel_column_template():
     column.c = [50, 0, 0]
     column.q = [225, 0, 0]
     column.discretization.ncol = 20  # A supplied grid for the qualitative demonstration.
-    return components, column
+    return component_system, column
 
 
 def show_carousel_collection(product, waste, feed):

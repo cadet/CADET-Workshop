@@ -10,20 +10,20 @@ from CADETProcess.processModel import (
 
 def separation_model(name="lwe", with_binding=True):
     """Build a fresh familiar column; leave the process events for the notebook."""
-    components = ComponentSystem(["Salt", "Protein A", "Protein B"])
-    inlet = Inlet(components, "inlet")
+    component_system = ComponentSystem(["Salt", "Protein A", "Protein B"])
+    inlet = Inlet(component_system, "inlet")
     inlet.flow_rate = 1e-7  # 6 mL/min
     inlet.c = [50, 0, 0]
 
-    column = LumpedRateModelWithoutPores(components, "column")
+    column = LumpedRateModelWithoutPores(component_system, "column")
     column.length = 0.1
     column.diameter = 0.02
     column.total_porosity = 0.4
     column.axial_dispersion = 1e-7
     column.c = [50, 0, 0]
 
-    outlet = Outlet(components, "outlet")
-    sheet = FlowSheet(components, "flow_sheet")
+    outlet = Outlet(component_system, "outlet")
+    sheet = FlowSheet(component_system, "flow_sheet")
     sheet.add_unit(inlet)
     sheet.add_unit(column)
     sheet.add_unit(outlet, product_outlet=True)
@@ -32,7 +32,7 @@ def separation_model(name="lwe", with_binding=True):
     process = Process(sheet, name)
 
     if with_binding:
-        binding = StericMassAction(components, "SMA")
+        binding = StericMassAction(component_system, "SMA")
         binding.is_kinetic = True
         binding.adsorption_rate = [0.0, 0.3, 0.2]  # Salt placeholder, Protein A, Protein B
         binding.desorption_rate = [0.0, 1.5, 1.5]

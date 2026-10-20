@@ -11,25 +11,25 @@ from CADETProcess.processModel import (
 
 def batch_elution_process():
     """Supply the model; leave optimization variables and metrics to the lesson."""
-    components = ComponentSystem(["A", "B"])
-    binding = Langmuir(components, "langmuir")
+    component_system = ComponentSystem(["A", "B"])
+    binding = Langmuir(component_system, "langmuir")
     binding.is_kinetic = False
     binding.adsorption_rate = [0.02, 0.03]
     binding.desorption_rate = [1, 1]
     binding.capacity = [100, 100]
-    feed = Inlet(components, "feed")
+    feed = Inlet(component_system, "feed")
     feed.c = [10, 10]
-    eluent = Inlet(components, "eluent")
+    eluent = Inlet(component_system, "eluent")
     eluent.c = [0, 0]
-    column = LumpedRateModelWithoutPores(components, "column")
+    column = LumpedRateModelWithoutPores(component_system, "column")
     column.binding_model = binding
     column.length = 0.6
     column.diameter = 0.024
     column.total_porosity = 0.7
     column.axial_dispersion = 4.7e-7
     column.discretization.ncol = 30
-    outlet = Outlet(components, "outlet")
-    sheet = FlowSheet(components, "flow_sheet")
+    outlet = Outlet(component_system, "outlet")
+    sheet = FlowSheet(component_system, "flow_sheet")
     sheet.add_unit(feed, feed_inlet=True)
     sheet.add_unit(eluent, eluent_inlet=True)
     sheet.add_unit(column)

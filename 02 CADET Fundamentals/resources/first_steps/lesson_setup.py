@@ -264,23 +264,22 @@ def rtd_system_model(name="system", include_mixer=True):
     import numpy as np
     from CADETProcess.processModel import Inlet, Cstr, TubularReactor, Outlet
 
-    components = ComponentSystem(["Tracer"])
-    inlet = Inlet(components, "inlet")
+    component_system = ComponentSystem(["Tracer"])
+    inlet = Inlet(component_system, "inlet")
     inlet.c = 0
     inlet.flow_rate = 1e-7
     units = {"inlet": inlet}
     if include_mixer:
-        mixer = Cstr(components, "mixer")
+        mixer = Cstr(component_system, "mixer")
         mixer.init_liquid_volume = 1e-6
         mixer.const_solid_volume = 0
-        mixer.flow_rate = 1e-7
         units["mixer"] = mixer
-    tubing = TubularReactor(components, "tubing")
+    tubing = TubularReactor(component_system, "tubing")
     tubing.length = 1
     tubing.diameter = np.sqrt(4 * 2e-6 / np.pi)
     tubing.axial_dispersion = 1e-8
-    units.update(tubing=tubing, outlet=Outlet(components, "outlet"))
-    sheet = FlowSheet(components, "flow_sheet")
+    units.update(tubing=tubing, outlet=Outlet(component_system, "outlet"))
+    sheet = FlowSheet(component_system, "flow_sheet")
     for unit in units.values():
         sheet.add_unit(unit)
     ordered = list(units.values())
@@ -290,7 +289,7 @@ def rtd_system_model(name="system", include_mixer=True):
     process.cycle_time = 300
     process.add_event("pulse_on", "flow_sheet.inlet.c", 1, 0)
     process.add_event("pulse_off", "flow_sheet.inlet.c", 0, 5)
-    return components, units, sheet, process
+    return component_system, units, sheet, process
 
 
 def pulse_centroid(signal):

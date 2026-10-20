@@ -21,27 +21,26 @@ PULSE_DURATION = 5.0
 
 
 def build_instrument(with_column):
-    components = ComponentSystem(["Tracer"])
-    inlet = Inlet(components, "inlet")
+    component_system = ComponentSystem(["Tracer"])
+    inlet = Inlet(component_system, "inlet")
     inlet.flow_rate = FLOW_RATE
-    mixer = Cstr(components, "mixer")
+    mixer = Cstr(component_system, "mixer")
     mixer.init_liquid_volume = MIXER_VOLUME
     mixer.const_solid_volume = 0
-    mixer.flow_rate = FLOW_RATE
-    tubing = TubularReactor(components, "tubing")
+    tubing = TubularReactor(component_system, "tubing")
     tubing.length = 1
     tubing.diameter = np.sqrt(4 * TUBING_VOLUME / np.pi)
     tubing.axial_dispersion = 1e-8
     units = [inlet, mixer, tubing]
     if with_column:
-        column = LumpedRateModelWithoutPores(components, "column")
+        column = LumpedRateModelWithoutPores(component_system, "column")
         column.length = 0.1
         column.diameter = 0.02
         column.total_porosity = 0.35
         column.axial_dispersion = 1e-7
         units.append(column)
-    units.append(Outlet(components, "outlet"))
-    sheet = FlowSheet(components, "flow_sheet")
+    units.append(Outlet(component_system, "outlet"))
+    sheet = FlowSheet(component_system, "flow_sheet")
     for unit in units:
         sheet.add_unit(unit)
     for origin, destination in zip(units, units[1:]):

@@ -12,19 +12,19 @@ from CADETProcess.processModel import (
 
 def acetone_process():
     """Build the 1 s pulse experiment at 1 mL/min with initial transport estimates."""
-    components = ComponentSystem(["Acetone"])
-    inlet = Inlet(components, "inlet")
+    component_system = ComponentSystem(["Acetone"])
+    inlet = Inlet(component_system, "inlet")
     inlet.flow_rate = 1e-6 / 60
     inlet.c = [0]
 
-    column = LumpedRateModelWithoutPores(components, "column")
+    column = LumpedRateModelWithoutPores(component_system, "column")
     column.length = 0.014
     column.diameter = 0.01
     column.total_porosity = 0.5
     column.axial_dispersion = 1e-6
 
-    outlet = Outlet(components, "outlet")
-    flow_sheet = FlowSheet(components)
+    outlet = Outlet(component_system, "outlet")
+    flow_sheet = FlowSheet(component_system)
     flow_sheet.add_unit(inlet)
     flow_sheet.add_unit(column)
     flow_sheet.add_unit(outlet)
