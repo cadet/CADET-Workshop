@@ -111,7 +111,7 @@ def instrument_widgets():
 
 def populate_instrument(configuration):
     """Restore the tracer Breakthrough recipe in the instrument configuration."""
-    # Lesson: solution-tagged checkpoint. Exercises: supplied starter on both branches.
+    # Supplied on both branches: prefilled lesson widget and exercise starter.
     from dataclasses import replace
     state = replace(
         configuration.snapshot(), components=["Tracer"], template_key="Breakthrough",
