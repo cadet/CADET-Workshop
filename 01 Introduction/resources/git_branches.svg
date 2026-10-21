@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="250" viewBox="0 0 760 250" font-family="sans-serif" font-size="14">
+<rect width="760" height="250" fill="white"/>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#555"/></marker></defs>
+<text x="10" y="55" fill="#2f6f9f" font-weight="bold">master</text>
+<line x1="160" y1="50" x2="710" y2="50" stroke="#2f6f9f" stroke-width="4"/>
+<text x="10" y="130" fill="#4f8a3a" font-weight="bold">dev</text>
+<line x1="160" y1="125" x2="680" y2="125" stroke="#4f8a3a" stroke-width="4"/>
+<text x="10" y="205" fill="#c07a1a" font-weight="bold">feature</text>
+<line x1="390" y1="200" x2="510" y2="200" stroke="#c07a1a" stroke-width="4"/>
+<line x1="330" y1="125" x2="390" y2="200" stroke="#555" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<text x="368.0" y="167.5" fill="#333">branch</text>
+<line x1="510" y1="200" x2="560" y2="125" stroke="#555" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<text x="543.0" y="167.5" fill="#333">pull request</text>
+<line x1="620" y1="125" x2="650" y2="50" stroke="#555" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<text x="643.0" y="92.5" fill="#333">release</text>
+<circle cx="190" cy="50" r="9" fill="white" stroke="#2f6f9f" stroke-width="4"/>
+<circle cx="650" cy="50" r="9" fill="white" stroke="#2f6f9f" stroke-width="4"/>
+<circle cx="190" cy="125" r="9" fill="white" stroke="#4f8a3a" stroke-width="4"/>
+<circle cx="260" cy="125" r="9" fill="white" stroke="#4f8a3a" stroke-width="4"/>
+<circle cx="330" cy="125" r="9" fill="white" stroke="#4f8a3a" stroke-width="4"/>
+<circle cx="560" cy="125" r="9" fill="white" stroke="#4f8a3a" stroke-width="4"/>
+<circle cx="620" cy="125" r="9" fill="white" stroke="#4f8a3a" stroke-width="4"/>
+<circle cx="390" cy="200" r="9" fill="white" stroke="#c07a1a" stroke-width="4"/>
+<circle cx="450" cy="200" r="9" fill="white" stroke="#c07a1a" stroke-width="4"/>
+<circle cx="510" cy="200" r="9" fill="white" stroke="#c07a1a" stroke-width="4"/>
+<text x="100" y="34" fill="#333">master: released versions</text>
+<text x="100" y="109" fill="#333">dev: next release</text>
+<text x="370" y="232" fill="#333">feature/new-binding-model</text>
+</svg>
