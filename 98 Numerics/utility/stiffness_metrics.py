@@ -34,10 +34,11 @@ import numpy as np
 import pandas as pd
 
 # Okabe-Ito, a colorblind safe qualitative palette. Assigned in this fixed
-# order, never cycled: a sixth curve means the figure shows too much.
-_COLORS = ['#0072B2', '#D55E00', '#009E73', '#E69F00', '#CC79A7']
-_GRID_COLOR = '#C8C8C8'
-_SECTION_COLOR = '#808080'
+# order, never cycled: a sixth curve means the figure shows too much. Shared
+# with the other plots of this chapter, so that a colour always means the same.
+COLORS = ['#0072B2', '#D55E00', '#009E73', '#E69F00', '#CC79A7']
+GRID_COLOR = '#C8C8C8'
+SECTION_COLOR = '#808080'
 
 
 def enable_idas_meta(model, every_step=False):
@@ -382,9 +383,9 @@ def summary_table(metrics):
     } for m in metrics])
 
 
-def _style_axis(axis, section_times=None, label_sections=False):
+def style_axis(axis, section_times=None, label_sections=False):
     """Apply the plot style used throughout this chapter."""
-    axis.grid(True, color=_GRID_COLOR, linewidth=0.6, alpha=0.6)
+    axis.grid(True, color=GRID_COLOR, linewidth=0.6, alpha=0.6)
     axis.set_axisbelow(True)
     axis.spines['top'].set_visible(False)
     axis.spines['right'].set_visible(False)
@@ -396,7 +397,7 @@ def _style_axis(axis, section_times=None, label_sections=False):
 
     for section_time in interior:
         axis.axvline(
-            section_time, color=_SECTION_COLOR,
+            section_time, color=SECTION_COLOR,
             linewidth=1.0, linestyle='--', zorder=0
         )
 
@@ -408,7 +409,7 @@ def _style_axis(axis, section_times=None, label_sections=False):
             'section transition' + ('s' if interior.size > 1 else ''),
             xy=(interior[0], 1.0), xycoords=('data', 'axes fraction'),
             xytext=(-11, -4), textcoords='offset points',
-            color=_SECTION_COLOR, fontsize=8,
+            color=SECTION_COLOR, fontsize=8,
             rotation=90, verticalalignment='top'
         )
 
@@ -441,14 +442,14 @@ def plot_step_size(metrics, axis=None, show_sections=True):
         taken = m.step_size > 0.0
         axis.plot(
             m.time[taken], m.step_size[taken],
-            color=_COLORS[index % len(_COLORS)], linewidth=2.0,
+            color=COLORS[index % len(COLORS)], linewidth=2.0,
             label=m.label or None
         )
 
     axis.set_yscale('log')
     axis.set_xlabel(r'simulated time $/~s$')
     axis.set_ylabel(r'time step size $h~/~s$')
-    _style_axis(
+    style_axis(
         axis,
         metrics[0].section_times if show_sections else None,
         label_sections=True
@@ -497,14 +498,14 @@ def plot_step_density(metrics, axis=None, show_sections=True, n_bins=150):
 
         axis.stairs(
             density, edges,
-            color=_COLORS[index % len(_COLORS)], linewidth=1.8,
+            color=COLORS[index % len(COLORS)], linewidth=1.8,
             label=m.label or None
         )
 
     axis.set_yscale('log')
     axis.set_xlabel(r'simulated time $/~s$')
     axis.set_ylabel(r'time steps $/~s$')
-    _style_axis(axis, metrics[0].section_times if show_sections else None)
+    style_axis(axis, metrics[0].section_times if show_sections else None)
 
     if len(metrics) > 1:
         axis.legend(frameon=False)
@@ -540,7 +541,7 @@ def plot_bdf_order(metrics, axis=None, show_sections=True):
     for index, m in enumerate(metrics):
         axis.step(
             m.time, m.bdf_order, where='post',
-            color=_COLORS[index % len(_COLORS)], linewidth=1.5,
+            color=COLORS[index % len(COLORS)], linewidth=1.5,
             label=m.label or None
         )
 
@@ -548,7 +549,7 @@ def plot_bdf_order(metrics, axis=None, show_sections=True):
     axis.set_yticks(range(0, 6))
     axis.set_xlabel(r'simulated time $/~s$')
     axis.set_ylabel('BDF order')
-    _style_axis(axis, metrics[0].section_times if show_sections else None)
+    style_axis(axis, metrics[0].section_times if show_sections else None)
 
     if len(metrics) > 1:
         axis.legend(frameon=False)
