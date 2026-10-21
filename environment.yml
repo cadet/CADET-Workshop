@@ -1,23 +1,42 @@
 name: cadet_workshop
+# Exact versions of the environment the workshop notebooks were validated in.
+# CADET-Process and CADET-GUI are pinned to commits; nothing changes when their branches move.
 channels:
   - conda-forge
 dependencies:
   - python=3.12
   - cadet=5.1.1
-  - anywidget
-  - gitpython
-  - ipympl
-  - ipywidgets
-  - joblib
-  - jupyterlab=4.6
-  - jupyterlab-myst
-  - jupyterlab-slideshow
-  - jupytext
-  - openpyxl
-  - pathos
+  - anywidget=0.11.0
+  - h5py=3.16.0
+  - ipykernel=7.4.0
+  - ipympl=0.10.0
+  - ipywidgets=8.1.9
+  - joblib=1.6.0
+  - jupyterlab=4.6.4
+  - jupyterlab-myst=2.7.0
+  - jupyterlab-slideshow=0.3.4
+  - jupytext=1.19.6
+  - matplotlib-base=3.11.2
+  - numba=0.68.0
+  - numpy=2.2.6
+  - openpyxl=3.1.5
+  - pandas=2.3.3
+  - pathos=0.3.5
+  - psutil=7.2.2
+  - scipy=1.17.1
+  - traitlets=5.16.1
   - pip
-  - pre-commit
+  # Maintainer tools: preview builds and pre-commit hooks
+  - gitpython=3.2.0
+  - pre-commit=4.6.2
   - pip:
-    - git+https://github.com/fau-advanced-separations/CADET-Process.git@a65245e3c0cae8d885a805162fc6ee21201f6eca
+    # CADET-Process dev a65245e plus the cyclic fractionation fix (PR #458)
+    - git+https://github.com/fau-advanced-separations/CADET-Process.git@758eaebdf09af25358ba198020f8b9c0e7d6619b
     - git+https://github.com/cadet/CADET-GUI.git@289901c3993487d654c9223017315c01a54d1093
-    - nbtoolbelt
+    - addict==2.3.0
+    - CADET-Python==1.3.0
+    - corner==2.3.0
+    - hopsy==1.7.0
+    - pipefunc==0.93.2
+    - pymoo==0.6.2
+    - nbtoolbelt==2026.4.1
