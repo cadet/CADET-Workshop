@@ -1,3 +1,4 @@
+import shlex
 import json
 import sys
 import os
@@ -55,7 +56,7 @@ class Test_Workshop_Tools(unittest.TestCase):
             for lesson in lessons
         }
         support_scripts = {
-            (lesson.parent / line.split(maxsplit=1)[1]).resolve()
+            (lesson.parent / shlex.split(line)[1]).resolve()
             for lesson in lessons
             for cell in jupytext.read(lesson).cells if cell.cell_type == "code"
             for line in cell.source.splitlines() if line.startswith("%run ")
