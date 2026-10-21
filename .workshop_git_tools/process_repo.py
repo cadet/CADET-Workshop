@@ -401,7 +401,7 @@ def lesson_files(repo_root):
     return sorted(
         m for m in repo_root.glob("**/*.md")
         if m.parent != repo_root and "README" not in m.as_posix()
-        and ".git" not in m.parts and ".ipynb_checkpoints" not in m.parts
+        and not any(part.startswith(".") for part in m.relative_to(repo_root).parts)
     )
 
 

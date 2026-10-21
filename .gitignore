@@ -9,3 +9,7 @@ results_*
 *.egg-info
 .idea
 .tests/tmp*
+
+# Local planning notes
+OVERHAUL_2026_PLAN.md
+DISCARDED_2026.md

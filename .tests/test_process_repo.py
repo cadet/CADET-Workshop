@@ -1,4 +1,5 @@
 import json
+import sys
 import os
 import shutil
 import unittest
@@ -7,8 +8,10 @@ from pathlib import Path
 from git import Repo
 import jupytext
 
-from workshop_git_tools import process_repo
-from workshop_git_tools.process_repo import on_error
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / ".workshop_git_tools"))
+
+import process_repo
+from process_repo import on_error
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TMP_REPO = Path(__file__).resolve().parent / "tmp_test_repo"

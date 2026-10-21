@@ -1,3 +1,4 @@
+import sys
 import re
 import tempfile
 import unittest
@@ -5,9 +6,11 @@ from collections import defaultdict
 from pathlib import Path
 
 import jupytext
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / ".workshop_git_tools"))
 from IPython.core.inputtransformer2 import TransformerManager
 
-from workshop_git_tools.process_repo import lesson_files
+from process_repo import lesson_files
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
