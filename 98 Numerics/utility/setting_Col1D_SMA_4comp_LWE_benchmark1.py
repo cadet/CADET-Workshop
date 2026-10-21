@@ -117,14 +117,16 @@ def get_model(
             
             column.particle_type_000.has_film_diffusion = 1
             column.particle_type_000.par_geom = 'SPHERE'
-            column.particle_type_000.par_radius = 4.5e-05
+            column.particle_type_000.par_radius = kwargs.get('par_radius', 4.5e-05)
             column.particle_type_000.par_coreradius = 0.0
             column.particle_type_000.par_porosity = 0.75
-            column.particle_type_000.film_diffusion = [6.9e-06, 6.9e-06, 6.9e-06, 6.9e-06]
+            column.particle_type_000.film_diffusion = kwargs.get(
+                'film_diffusion', [6.9e-06, 6.9e-06, 6.9e-06, 6.9e-06])
             
             if particle_type == "GENERAL_RATE_PARTICLE":
                 column.particle_type_000.has_pore_diffusion = 1
-                column.particle_type_000.pore_diffusion = [7.00e-10, 6.07e-11, 6.07e-11, 6.07e-11]
+                column.particle_type_000.pore_diffusion = kwargs.get(
+                    'pore_diffusion', [7.00e-10, 6.07e-11, 6.07e-11, 6.07e-11])
                 column.particle_type_000.has_surface_diffusion = 0
                 column.particle_type_000.surface_diffusion = [0.,0.,0.,0.]
                 column.particle_type_000.discretization.PAR_DISC_TYPE = 'EQUIDISTANT_PAR'
