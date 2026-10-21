@@ -1,17 +1,138 @@
 # -*- coding: utf-8 -*-
 """
-Created January 2023
 
 This script impements evaluation functionalities related to numerical 
 convergence analysis for CADET simulations.
 
-@author: Jan Michael Breuer
 """
 
 from cadet import Cadet
-import matplotlib.pyplot as plt
 import numpy as np
+from scipy.special import legendre
+import math
+import pandas as pd
+from dataclasses import dataclass
 import re
+import os
+import h5py
+import shutil
+import platform
+from pathlib import Path
+
+def get_cadet_path():
+    install_path = None
+    
+    executable = 'cadet-cli'
+    if install_path is None:
+        try:
+            if platform.system() == 'Windows':
+                executable += '.exe'
+            executable_path = Path(shutil.which(executable))
+        except TypeError:
+            raise FileNotFoundError(
+                "CADET could not be found. Please set an install path"
+            )
+        install_path = executable_path.parent.parent
+    
+    install_path = Path(install_path)
+    cadet_bin_path = install_path
+    
+    if cadet_bin_path.exists():
+        print("CADET-Core found: ", cadet_bin_path)
+        return cadet_bin_path
+        
+    else:
+        raise FileNotFoundError(
+            "CADET could not be found. Please check the path"
+        )
+
+_DG_models_ = [
+    "GENERAL_RATE_MODEL",
+    "LUMPED_RATE_MODEL_WITH_PORES",
+    "LUMPED_RATE_MODEL_WITHOUT_PORES"
+]
+_FV_models_ = [
+    "GENERAL_RATE_MODEL",
+    "LUMPED_RATE_MODEL_WITH_PORES",
+    "LUMPED_RATE_MODEL_WITHOUT_PORES",
+    "GENERAL_RATE_MODEL_2D"
+]
+_methods_ = ["DGSEM", "collocation_DGSEM", "FV"]
+
+
+@dataclass
+class Discretization:
+
+    axial_polynomial_degree: int
+    particle_polynomial_degree: int
+    radial_polynomial_degree: int
+    axial_collocation_DG: bool
+    particle_collocation_DG: bool
+    radial_collocation_DG: bool
+    axial_cells: int
+    particle_cells: int
+    radial_cells: int
+
+    def __init__(self,
+                 axial_polynomial_degree, axial_cells,
+                 particle_polynomial_degree=None, particle_cells=None,
+                 radial_polynomial_degree=None, radial_cells=None,
+                 axial_collocation_DG=True,
+                 particle_collocation_DG=False,
+                 radial_collocation_DG=True):
+
+        self.axial_polynomial_degree = axial_polynomial_degree
+        self.particle_polynomial_degree = particle_polynomial_degree
+        self.radial_polynomial_degree = radial_polynomial_degree
+        self.axial_cells = axial_cells
+        self.particle_cells = particle_cells
+        self.radial_cells = radial_cells
+        self.axial_collocation_DG = axial_collocation_DG
+        self.particle_collocation_DG = particle_collocation_DG
+        self.radial_collocation_DG = radial_collocation_DG
+
+    @property
+    def axial_method(self):
+        if self.axial_polynomial_degree == 0:
+            return 0
+        elif self.axial_collocation_DG:
+            return self.axial_polynomial_degree
+        else:
+            return -self.axial_polynomial_degree
+
+    @axial_method.setter
+    def axial_method(self, axial_method):
+        self.axial_polynomial_degree = int(abs(axial_method))
+        self.axial_collocation_DG = 1 if axial_method > 0 else 0
+
+    @property
+    def particle_method(self):
+        if self.particle_polynomial_degree == 0:
+            return 0
+        elif self.particle_collocation_DG:
+            return self.particle_polynomial_degree
+        else:
+            return -self.particle_polynomial_degree
+
+    @particle_method.setter
+    def particle_method(self, particle_method):
+        self.particle_polynomial_degree = int(abs(particle_method))
+        self.particle_collocation_DG = 1 if particle_method > 0 else 0
+
+    @property
+    def radial_method(self):
+        if self.radial_polynomial_degree == 0:
+            return 0
+        elif self.radial_collocation_DG:
+            return self.radial_polynomial_degree
+        else:
+            return -self.radial_polynomial_degree
+
+    @radial_method.setter
+    def radial_method(self, radial_method):
+        self.radial_polynomial_degree = int(abs(radial_method))
+        self.radial_collocation_DG = 1 if radial_method > 0 else 0
+
 
 def legendre_gauss_nodes_and_weights(N, nit=100, TOL=1e-12):
     if N < 0:
@@ -112,58 +233,6 @@ def legendre_gauss_lobatto_nodes_and_weights(N, nit=100, TOL=1e-12):
         return nodes, weights
 
 
-def test_Gauss_and_Lobatto_nodes():
-
-    # test Legendre-Gauss
-    with pytest.raises(ValueError):
-        LGnodes, LGweights = legendre_gauss_nodes_and_weights(-1)
-
-    LGnodes, LGweights = legendre_gauss_nodes_and_weights(0)
-    np.testing.assert_almost_equal(LGnodes, np.array([0.0]), decimal=14)
-    np.testing.assert_almost_equal(LGweights, np.array([2.0]), decimal=14)
-
-    LGnodes, LGweights = legendre_gauss_nodes_and_weights(1)
-    np.testing.assert_almost_equal(
-        LGnodes, np.array([-np.sqrt(1/3), np.sqrt(1/3)]), decimal=14)
-    np.testing.assert_almost_equal(LGweights, np.array([1.0, 1.0]), decimal=14)
-
-    LGnodes, LGweights = legendre_gauss_nodes_and_weights(2)
-    np.testing.assert_almost_equal(
-        LGnodes, np.array([-np.sqrt(3/5), 0.0, np.sqrt(3/5)]), decimal=14)
-    np.testing.assert_almost_equal(
-        LGweights, np.array([5/9, 8/9, 5/9]), decimal=14)
-
-    LGnodes, LGweights = legendre_gauss_nodes_and_weights(4)
-    np.testing.assert_almost_equal(
-        LGnodes, np.array([-0.906179845938664, -0.538469310105683, 0.0,
-                           0.538469310105683, 0.906179845938664]), decimal=14)
-    np.testing.assert_almost_equal(LGweights, np.array([
-        0.236926885056189, 0.478628670499366, 0.568888888888889,
-        0.478628670499366, 0.236926885056189]), decimal=14)
-
-    # test Legendre-Gauss-Lobatto
-    with pytest.raises(ValueError):
-        LGnodes, LGweights = legendre_gauss_lobatto_nodes_and_weights(-1)
-        LGnodes, LGweights = legendre_gauss_lobatto_nodes_and_weights(0)
-
-    LGnodes, LGweights = legendre_gauss_lobatto_nodes_and_weights(1)
-    np.testing.assert_almost_equal(
-        LGnodes, np.array([-1.0, 1.0]), decimal=14)
-    np.testing.assert_almost_equal(LGweights, np.array([1.0, 1.0]), decimal=14)
-
-    LGnodes, LGweights = legendre_gauss_lobatto_nodes_and_weights(2)
-    np.testing.assert_almost_equal(
-        LGnodes, np.array([-1.0, 0.0, 1.0]), decimal=14)
-    np.testing.assert_almost_equal(
-        LGweights, np.array([1/3, 4/3, 1/3]), decimal=14)
-
-    LGnodes, LGweights = legendre_gauss_lobatto_nodes_and_weights(4)
-    np.testing.assert_almost_equal(
-        LGnodes, np.array([-1.0, -np.sqrt(3/7), 0.0, np.sqrt(3/7), 1.0]), decimal=14)
-    np.testing.assert_almost_equal(LGweights, np.array([
-        1/10, 49/90, 32/45, 49/90, 1/10]), decimal=14)
-
-
 def get_simulation(simulation):
     """Get CADET object from h5 file.
 
@@ -179,7 +248,7 @@ def get_simulation(simulation):
     if isinstance(simulation, str):
         sim = Cadet()
         sim.filename = simulation
-        sim.load()
+        sim.load_from_file()
         return sim
 
     elif not isinstance(simulation, Cadet):
@@ -393,28 +462,6 @@ def get_solution_times(simulation):
                                               'solution_times']
         )
     )
-
-def get_commit_hash(simulation):
-    """Get compute time from simulation
-
-    Parameters
-    ----------
-    simulation : string or CADET object
-        specifies the simulation of interest
-
-    Returns
-    -------
-    np.array
-        Solution vector.
-    """
-    
-    simRoot = get_simulation(simulation).root
-    commit_info = sim_go_to(simRoot, ['meta', 'cadet_commit']).decode('utf-8')
-    
-    if commit_info == 'GITDIR-NOTFOUND':
-        commit_info = 'v.' + sim_go_to(simRoot, ['meta', 'cadet_version']).decode('utf-8') + ' commit'
-    
-    return commit_info
 
 
 def get_compute_time(simulation):
@@ -776,21 +823,6 @@ def calculate_all_abs_errors(simulations, reference, unit='001', which='outlet',
             if which == 'outlet':
                 errors.append(calculate_abs_error(get_solution(simulation, 'unit_'+unit, which, comp),
                                                   get_solution(reference, 'unit_'+unit, which, comp)))
-            elif which == 'bulk':
-                if all(key in kwargs for key in ('orig_coords', 'domain_end', 'output_coords', 'polyDeg', 'nCells')):
-                    errors.append(
-                        calculate_abs_error(
-                            get_solution(simulation, 'unit_'+unit, which,
-                                         comp)[kwargs.get('time_point', -1), :],
-                            get_interpolated_solution(
-                                get_solution(
-                                    reference, 'unit_'+unit, which, comp)[kwargs.get('time_point', -1), :],
-                                kwargs['orig_coords'], kwargs['domain_end'], kwargs['output_coords'][Idx], kwargs['polyDeg'], kwargs['nCells'])
-                        )
-                    )
-                else:  # it is assumed that solution is already given at the same discrete points
-                    errors.append(calculate_abs_error(get_solution(simulation, 'unit_'+unit, which, comp)[-1, :],
-                                                      reference))
             elif which == 'sens_outlet':
                 errors.append(calculate_abs_error(get_solution(simulation, 'unit_'+unit, which, comp, **kwargs),
                                                   get_solution(reference, 'unit_'+unit, which, comp, **kwargs)))
@@ -832,23 +864,17 @@ def calculate_all_abs_errors(simulations, reference, unit='001', which='outlet',
                         errors.append(calculate_abs_error(reference, sim_interpolated))
                         
                     else:  # it is assumed that solution is already given at the same discrete points
-                        errors.append(calculate_abs_error(get_solution(simulation, 'unit_'+unit, which, comp)[-1, :],
-                                                          reference))
+                        try:
+                            errors.append(
+                                calculate_abs_error(
+                                    get_solution(simulation, 'unit_'+unit, which, comp)[-1, :],
+                                    reference)
+                                )
+                        except ValueError as e:
+                            raise ValueError(f"Caught a ValueError: {e}\n You probably need to provide reference data info such as polyDeg, nCells, ref_coords!")
+
                 else:
                     errors.append(calculate_abs_error(get_solution(simulation, 'unit_'+unit, which, comp), reference))
-            elif which == 'bulk':
-                if all(key in kwargs for key in ('orig_coords', 'domain_end', 'output_coords', 'polyDeg', 'nCells')):
-                    errors.append(
-                        calculate_abs_error(
-                            get_solution(simulation, 'unit_'+unit, which,
-                                         comp)[kwargs.get('time_point', -1), :],
-                            get_interpolated_solution(
-                                reference, kwargs['orig_coords'], kwargs['domain_end'], kwargs['output_coords'], kwargs['polyDeg'], kwargs['nCells'])
-                        )
-                    )
-                else:  # it is assumed that solution is already given at the same discrete points
-                    errors.append(calculate_abs_error(get_solution(simulation, 'unit_'+unit, which, comp)[-1, :],
-                                                      reference))
             elif which == 'sens_outlet':
                 errors.append(calculate_abs_error(get_solution(simulation, 'unit_'+unit, which, comp, **kwargs),
                                                   reference))
@@ -1118,85 +1144,1042 @@ def map_xi_to_z(xi, cellIdx, deltaZ):
     return z
 
 
-def test_map_z_to_xi():
+def build_gauss_evaluation_grid(length, n_cells, quad_points):
+    """Build a per-cell Gauss-Legendre evaluation grid for bulk error integration.
 
-    polyDeg = 4
+    Parameters
+    ----------
+    length : float
+        Length of the spatial 1D interval.
+    n_cells : int
+        Number of (DG or FV) cells.
+    quad_points : int
+        Number of Gauss-Legendre quadrature points per cell.
 
-    nNodes = polyDeg + 1
+    Returns
+    -------
+    np.array
+        Evaluation coordinates, shape (n_cells * quad_points,).
+    np.array
+        Gauss-Legendre quadrature weights, shape (quad_points,).
+    float
+        Mapping Jacobian (half the cell width).
+    """
+    xi_q, w_q = np.polynomial.legendre.leggauss(quad_points)
+    h = length / n_cells
+    eval_coords = np.empty(n_cells * quad_points)
 
-    nodes, weights = LGL_NodesWeights(polyDeg)
+    write_idx = 0
+    for cell_idx in range(n_cells):
+        z_left = cell_idx * h
+        eval_coords[write_idx:write_idx + quad_points] = z_left + 0.5 * (xi_q + 1.0) * h
+        write_idx += quad_points
 
-    x_lIdx = 0
-    cellIdx = 2
-    stretch = 0.1
-    deltaZ = 2 * stretch
-    orig_coords = (nodes + 1) * stretch + deltaZ * cellIdx
+    return eval_coords, w_q, 0.5 * h
 
-    mapped_orig_coords = np.zeros(nNodes)
 
-    for node in range(nNodes):
-        mapped_orig_coords[node] = map_z_to_xi(
-            orig_coords[x_lIdx + node], cellIdx, deltaZ)
+def infer_bulk_n_cells(values, poly_deg, label="reference"):
+    """Infer the number of DG/FV cells from a bulk solution's spatial extent.
 
-    if (abs(mapped_orig_coords - nodes) > 1e-14).any():
+    Parameters
+    ----------
+    values : np.array
+        Bulk solution time slice, shape (n_points, ...).
+    poly_deg : int
+        Polynomial degree of the discretization.
+    label : string
+        Used in the error message if the shape is inconsistent.
+
+    Returns
+    -------
+    int
+        Number of cells.
+    """
+    n_nodes = poly_deg + 1
+    if values.shape[0] % n_nodes != 0:
         raise ValueError(
-            "getSolutionDG: mapped_orig_coords != nodes"
+            f"{label} bulk size {values.shape[0]} is not divisible by {n_nodes} "
+            f"(poly_deg={poly_deg})."
+        )
+    return values.shape[0] // n_nodes
+
+
+def infer_bulk_poly_deg(simulation, unit='001', default=None):
+    """Infer the polynomial degree of a bulk solution's representation.
+
+    Reads the spatial discretization of the given simulation (or reference),
+    i.e. the polynomial degree for DG and 0 for FV. This makes a reference
+    self-describing: an analytical reference may be stored as a high order DG
+    representation (see src/analytical.py) while the simulations that are
+    compared against it use any other method.
+
+    Parameters
+    ----------
+    simulation : string or CADET object
+        Simulation or reference to read the discretization from.
+    unit : string
+        Unit ID (000-999).
+    default : int
+        Returned if the discretization cannot be determined.
+
+    Returns
+    -------
+    int or None
+        Polynomial degree (0 for FV), or default.
+    """
+    try:
+        disc = sim_go_to(
+            get_simulation(simulation).root,
+            ['input', 'model', 'unit_' + unit, 'discretization']
+        )
+    except (ValueError, OSError, AttributeError):
+        return default
+
+    method = None
+    for key in ('spatial_method', 'SPATIAL_METHOD'):
+        if key in disc:
+            method = disc[key]
+            break
+    if method is None:
+        return default
+
+    method = np.asarray(method).ravel()[0]
+    if isinstance(method, bytes):
+        method = method.decode()
+    method = str(method).upper()
+
+    if method == 'FV':
+        return 0
+    if method == 'DG':
+        for key in ('polydeg', 'POLYDEG'):
+            if key in disc:
+                return int(np.asarray(disc[key]).ravel()[0])
+    return default
+
+
+def interpolate_uniform_dg_values(values, eval_coords, length, poly_deg, n_cells, nodes, bary_weights):
+    """Barycentrically interpolate a uniform-grid DG/FV bulk solution onto arbitrary coordinates.
+
+    Parameters
+    ----------
+    values : np.array
+        Bulk solution time slice, shape (n_cells * (poly_deg + 1), n_comp).
+    eval_coords : np.array
+        Coordinates to interpolate onto.
+    length : float
+        Length of the spatial 1D interval.
+    poly_deg : int
+        Polynomial degree of the discretization.
+    n_cells : int
+        Number of cells.
+    nodes : np.array
+        LGL nodes on [-1, 1] for poly_deg.
+    bary_weights : np.array
+        Barycentric weights for poly_deg.
+
+    Returns
+    -------
+    np.array
+        Interpolated values, shape (len(eval_coords), n_comp).
+    """
+    n_nodes = poly_deg + 1
+    n_comp = values.shape[1]
+    expected_size = n_cells * n_nodes
+    if values.shape[0] != expected_size:
+        raise ValueError(
+            f"Expected values with first dimension {expected_size}, got {values.shape[0]}"
         )
 
+    h = length / n_cells
+    cell_idx = np.floor(eval_coords / h).astype(int)
+    cell_idx = np.clip(cell_idx, 0, n_cells - 1)
+    xi = 2.0 * (eval_coords - cell_idx * h) / h - 1.0
 
-# TODO slice ?
-# def interpolate_DGsolution(solution_slice, output_coords, deltaZ=None, nNodes=None):
+    diff = xi[:, None] - nodes[None, :]
+    hit = np.abs(diff) < 1e-13
 
-#     for outputIdx in range(len(output_coords)):
+    safe_diff = np.where(hit, 1.0, diff)
+    bary = bary_weights[None, :] / safe_diff
+    alpha = bary / np.sum(bary, axis=1, keepdims=True)
 
-#         coord = output_coords[outputIdx]
+    if np.any(hit):
+        hit_rows = np.any(hit, axis=1)
+        alpha[hit_rows, :] = 0.0
+        alpha[hit_rows, np.argmax(hit[hit_rows], axis=1)] = 1.0
 
-#         # get element index and left boundary node index
-#         while (cellIdx + 1) * deltaZ < coord:
-#             cellIdx += 1
-#             x_lIdx += nNodes
-
-#         # Check if output coordinate is in DG coordinates
-#         for nodeIdx in range(nNodes):
-#             if coord - orig_coords[cellIdx * nNodes + nodeIdx] < 1e-14:
-#                 if nodeIdx == 0 and cellIdx != 0:
-#                     output_values[outputIdx] = 0.5 * (orig_values[cellIdx * nNodes + nodeIdx] + [cellIdx * nNodes + nodeIdx - 1])
-#                 elif nodeIdx == polyDeg and cellIdx != nCells - 1:
-#                     output_values[outputIdx] = 0.5 * (orig_values[cellIdx * nNodes + nodeIdx] + [cellIdx * nNodes + nodeIdx + 1])
-#                 else:
-#                     output_values[outputIdx] = orig_values[cellIdx * nNodes + nodeIdx]
-
-#         # Coordinate not in DG coordinates -> interpolate!
-
-#         # get coordinate w.r.t to reference element
-#         mapped_coord = coord * map_z_to_xi(coord, cellIdx, deltaZ)
-
-#         # calculate value at coord using using barycentric form
-#         output_values[outputIdx] = (bary_weights / (mapped_coord - nodes) * orig_values).sum() / (bary_weights / (mapped_coord - nodes)).sum()
-
-def get_interpolated_solution(simulation_name, output_coords, polyDeg, nCells, unit='unit_001'):
-
-    orig_coords = get_axial_coordinates(simulation_name, unit=unit)
-    orig_values = get_bulk(simulation_name, unit=unit)
-    column_length = sim_go_to(get_simulation(simulation_name).root,
-                              ['input',
-                               'model',
-                               unit,
-                               'col_length']
-                              )
-    return get_interpolated_solution(orig_values, orig_coords, column_length, output_coords, polyDeg, nCells)
+    nodal = values.reshape(n_cells, n_nodes, n_comp)
+    selected = nodal[cell_idx, :, :]
+    return np.einsum("en,enc->ec", alpha, selected, optimize=True)
 
 
-# all arrays need to be sorted w.r.t spatial direction
+def calculate_bulk_error_norms(sim_values, ref_values, length, n_cells_sim, n_cells_ref,
+                               poly_deg, quad_points, nodes, bary_weights,
+                               ref_poly_deg=None, ref_nodes=None, ref_bary_weights=None):
+    """Compute Linf, L1, and L2 errors between two bulk DG/FV solution time slices.
+
+    Both solutions are interpolated onto a shared Gauss-Legendre evaluation grid
+    (built from the simulation's own cell layout) so that solutions living on
+    different cell counts and/or polynomial degrees can be compared.
+
+    Parameters
+    ----------
+    sim_values : np.array
+        Simulation bulk solution time slice, shape (n_cells_sim*(poly_deg+1), n_comp).
+    ref_values : np.array
+        Reference bulk solution time slice, shape (n_cells_ref*(ref_poly_deg+1), n_comp).
+    length : float
+        Length of the spatial 1D interval.
+    n_cells_sim : int
+        Number of cells of the simulation.
+    n_cells_ref : int
+        Number of cells of the reference.
+    poly_deg : int
+        Polynomial degree of the simulation.
+    quad_points : int
+        Number of Gauss-Legendre quadrature points per cell.
+    nodes : np.array
+        LGL nodes for poly_deg.
+    bary_weights : np.array
+        Barycentric weights for poly_deg.
+    ref_poly_deg : int
+        Polynomial degree of the reference, defaults to poly_deg.
+    ref_nodes : np.array
+        LGL nodes for ref_poly_deg, defaults to nodes.
+    ref_bary_weights : np.array
+        Barycentric weights for ref_poly_deg, defaults to bary_weights.
+
+    Returns
+    -------
+    np.array
+        Linf error per component.
+    np.array
+        L1 error per component.
+    np.array
+        L2 error per component.
+    """
+    if ref_poly_deg is None:
+        ref_poly_deg = poly_deg
+        ref_nodes = nodes
+        ref_bary_weights = bary_weights
+
+    eval_coords, w_q, jac = build_gauss_evaluation_grid(length, n_cells_sim, quad_points)
+
+    sim_eval = interpolate_uniform_dg_values(
+        sim_values, eval_coords, length, poly_deg, n_cells_sim, nodes, bary_weights
+    )
+    ref_eval = interpolate_uniform_dg_values(
+        ref_values, eval_coords, length, ref_poly_deg, n_cells_ref, ref_nodes, ref_bary_weights
+    )
+
+    abs_err = np.abs(sim_eval - ref_eval)
+    n_comp = abs_err.shape[1]
+
+    linf_errors = np.max(abs_err, axis=0)
+
+    abs_err_reshaped = abs_err.reshape(n_cells_sim, quad_points, n_comp)
+    l1_errors = jac * np.einsum("q,cqk->k", w_q, abs_err_reshaped, optimize=True)
+
+    sq_err_reshaped = (abs_err ** 2).reshape(n_cells_sim, quad_points, n_comp)
+    l2_errors = np.sqrt(jac * np.einsum("q,cqk->k", w_q, sq_err_reshaped, optimize=True))
+
+    return linf_errors, l1_errors, l2_errors
+
+
+def get_bulk_time_slice(simulation, unit='001', time_point=-1):
+    """Get a bulk solution time slice and the associated column length.
+
+    Parameters
+    ----------
+    simulation : string or CADET object
+        Specifies the simulation of interest.
+    unit : string
+        Unit ID (000-999).
+    time_point : int
+        Index into the solution time axis.
+
+    Returns
+    -------
+    np.array
+        Bulk solution at time_point, shape (n_points, n_comp).
+    float
+        Column length.
+    """
+    sim = get_simulation(simulation)
+    length = float(sim_go_to(sim.root, ['input', 'model', 'unit_' + unit, 'bed_length']))
+    bulk = np.array(sim_go_to(sim.root, ['output', 'solution', 'unit_' + unit, 'solution_bulk']))
+    return bulk[time_point, :, :], length
+
+import numpy as np
+
+
+def _get_fv_bulk_geometry_weighting(simulation, unit):
+    """Return the geometry weighting of the FV bulk degrees of freedom.
+
+    The FV state of the axial cylinder model consists of ordinary cell
+    averages, whereas the radial cylinder shell and frustum models use
+    geometry-weighted cell averages
+
+        cbar_i = integral_{cell} A(x) c(x) dx / integral_{cell} A(x) dx
+
+    with A ~ r (radial shell) or A ~ r^2 (frustum), where
+    r(x) = r_inner + (x / length) * (r_outer - r_inner) along the normalized
+    transport coordinate. Any grid transfer of FV solutions (e.g. restricting
+    a fine reference onto a coarse grid) must use the same weighting;
+    an unweighted restriction has an O(h^2) error that caps the observable
+    EOC at two regardless of the scheme's actual order.
+
+    Parameters
+    ----------
+    simulation : string or CADET object
+        Simulation to read the unit geometry from.
+    unit : string
+        Unit ID (000-999).
+
+    Returns
+    -------
+    tuple (int, float or None, float or None)
+        (weight_power, r_inner, r_outer): A ~ r^weight_power;
+        weight_power = 0 denotes unweighted averages.
+    """
+    sim = get_simulation(simulation)
+    unit_dict = sim_go_to(sim.root, ['input', 'model', 'unit_' + unit])
+
+    def _get(key, default=None):
+        for k in (key.lower(), key.upper()):
+            if k in unit_dict:
+                return unit_dict[k]
+        return default
+
+    def _get_str(key, default=''):
+        value = _get(key, default)
+        value = np.asarray(value).ravel()[0] if np.size(value) else default
+        if isinstance(value, bytes):
+            value = value.decode()
+        return str(value).upper()
+
+    # GEOMETRY is the current interface's field for this; UNIT_TYPE substring matching is kept as a
+    # fallback for simulation output generated with the old (pre geometry-unification) interface,
+    # where the unit type itself was prefixed (e.g. RADIAL_GENERAL_RATE_MODEL).
+    geometry = _get_str('geometry')
+    unit_type = _get_str('unit_type')
+
+    if geometry == 'RADIAL_FLOW_CYLINDER_SHELL' or 'RADIAL' in unit_type:
+        weight_power = 1
+    elif geometry == 'AXIAL_FLOW_FRUSTUM' or 'FRUSTUM' in unit_type:
+        weight_power = 2
+    else:
+        return 0, None, None
+
+    if geometry == 'RADIAL_FLOW_CYLINDER_SHELL':
+        # r(xi=0) = inner radius, r(xi=1) = outer radius, derived from the mandatory
+        # CROSS_SECTION_AREA_OUTER/CYLINDER_HEIGHT/BED_LENGTH (CROSS_SECTION_AREA_INNER is only an
+        # optional double-check field and may not be present).
+        height = float(np.asarray(_get('cylinder_height')).ravel()[0])
+        r_outer = float(np.asarray(_get('cross_section_area_outer')).ravel()[0]) / (2.0 * np.pi * height)
+        r_inner = r_outer - float(np.asarray(_get('bed_length')).ravel()[0])
+    elif geometry == 'AXIAL_FLOW_FRUSTUM':
+        # r(xi=0) = large-end radius, r(xi=1) = small-end radius (CADET-Core places the large end
+        # at the start of the bed and the small end at x = bed_length).
+        r_inner = np.sqrt(float(np.asarray(_get('cross_section_area_large_end')).ravel()[0]) / np.pi)
+        r_outer = np.sqrt(float(np.asarray(_get('cross_section_area_small_end')).ravel()[0]) / np.pi)
+    else:
+        # Legacy (pre geometry-unification) interface.
+        r_inner = float(np.asarray(_get('col_radius_inner')).ravel()[0])
+        r_outer = float(np.asarray(_get('col_radius_outer')).ravel()[0])
+    return weight_power, r_inner, r_outer
+
+
+def _get_fv_grid_faces(simulation, unit, n_cells):
+    """Return the physical FV cell face coordinates of a simulation, or None.
+
+    Reads input/model/unit_XXX/discretization/GRID_FACES (present for
+    non-equidistant grids); returns None for equidistant grids (no
+    GRID_FACES field), in which case callers fall back to a uniform grid.
+
+    Parameters
+    ----------
+    simulation : string or CADET object
+        Simulation to read the grid from.
+    unit : string
+        Unit ID (000-999).
+    n_cells : int
+        Expected number of cells (validates the face count).
+
+    Returns
+    -------
+    np.ndarray or None
+        Face coordinates, shape (n_cells + 1,), or None.
+    """
+    sim = get_simulation(simulation)
+    disc = sim_go_to(sim.root, ['input', 'model', 'unit_' + unit, 'discretization'])
+
+    faces = None
+    for key in ('grid_faces', 'GRID_FACES'):
+        if key in disc:
+            faces = np.asarray(disc[key], dtype=float).ravel()
+            break
+    if faces is None:
+        return None
+    if faces.size != n_cells + 1:
+        raise ValueError(
+            f"GRID_FACES of unit {unit} has {faces.size} entries, expected {n_cells + 1}"
+        )
+    return faces
+
+
+def _fv_geometry_weight_integral(xi_a, xi_b, weight_power, r_inner, delta_r):
+    """Integral of the geometry weight r(xi)^p over [xi_a, xi_b] (normalized coords)."""
+    if weight_power == 0 or r_inner is None:
+        return xi_b - xi_a
+    if weight_power == 1:
+        return r_inner * (xi_b - xi_a) + 0.5 * delta_r * (xi_b**2 - xi_a**2)
+    # weight_power == 2
+    return ((r_inner + delta_r * xi_b)**3 - (r_inner + delta_r * xi_a)**3) / (3.0 * delta_r)
+
+
+def _fv_reference_cell_averages(ref_values, ref_poly_deg,
+                                length, n_cells_ref,
+                                sim_n_cells,
+                                weight_power=0, r_inner=None, r_outer=None,
+                                sim_faces=None, ref_faces=None):
+    """Return reference cell averages on the FV simulation grid.
+
+    Parameters
+    ----------
+    ref_values : ndarray
+        Reference solution, flattened over cells/nodes:
+        (n_cells_ref * (ref_poly_deg + 1), n_comp) for DG,
+        (n_cells_ref, n_comp) for FV.
+    ref_poly_deg : int
+        Reference polynomial degree. 0 means FV.
+    length : float
+        Domain length.
+    n_cells_ref : int
+        Number of reference cells.
+    sim_n_cells : int
+        Number of FV simulation cells.
+    weight_power : int
+        Geometry weighting of the FV cell averages: A(r) ~ r^weight_power
+        (0: axial/unweighted, 1: radial cylinder shell, 2: frustum), see
+        _get_fv_bulk_geometry_weighting.
+    r_inner : float
+        Inner radius, required for weight_power > 0.
+    r_outer : float
+        Outer radius, required for weight_power > 0.
+    sim_faces, ref_faces : ndarray, optional
+        Physical cell face coordinates of the simulation/reference grids
+        (shape (n_cells + 1,)); defaults to uniform grids. Required for
+        non-equidistant (e.g. equivolume) grids, where the uniform
+        assumption would introduce an O(h^2) restriction error that caps
+        the observable EOC at two.
+
+    Returns
+    -------
+    ndarray
+        Reference cell averages on the FV simulation grid,
+        shape (sim_n_cells, n_comp).
+    """
+    n_comp = ref_values.shape[1]
+    delta_r = (r_outer - r_inner) if (weight_power and r_inner is not None) else None
+
+    # ------------------------------------------------------------------
+    # Reference is FV:
+    #
+    # The FV values are (geometry-weighted) cell averages. To obtain the
+    # reference average over a simulation cell, integrate the piecewise-
+    # constant reference solution over the simulation cell using exact
+    # cell overlap, weighted by the same geometry measure A(r) ~ r^p that
+    # defines the FV degrees of freedom.
+    # ------------------------------------------------------------------
+    if ref_poly_deg == 0:
+        # Physical face coordinates; when only one grid provides faces, the
+        # other one is built uniformly on the same domain.
+        if sim_faces is None and ref_faces is None:
+            domain_lo, domain_hi = 0.0, length
+        elif sim_faces is not None:
+            domain_lo, domain_hi = float(sim_faces[0]), float(sim_faces[-1])
+        else:
+            domain_lo, domain_hi = float(ref_faces[0]), float(ref_faces[-1])
+        span = domain_hi - domain_lo
+
+        if sim_faces is None:
+            sim_f = domain_lo + np.arange(sim_n_cells + 1) * (span / sim_n_cells)
+        else:
+            sim_f = np.asarray(sim_faces, dtype=float)
+        if ref_faces is None:
+            ref_f = domain_lo + np.arange(n_cells_ref + 1) * (span / n_cells_ref)
+        else:
+            ref_f = np.asarray(ref_faces, dtype=float)
+
+        ref_left = ref_f[:-1]
+        ref_right = ref_f[1:]
+        sim_left = sim_f[:-1]
+        sim_right = sim_f[1:]
+
+        result = np.zeros((sim_n_cells, n_comp))
+
+        ref_idx = 0
+
+        for i in range(sim_n_cells):
+            x_left = sim_left[i]
+            x_right = sim_right[i]
+
+            # Advance to the first potentially overlapping reference cell.
+            while ref_idx < n_cells_ref - 1 and ref_right[ref_idx] <= x_left:
+                ref_idx += 1
+
+            weight_total = 0.0
+
+            j = ref_idx
+            while j < n_cells_ref and ref_left[j] < x_right:
+                overlap_left = max(x_left, ref_left[j])
+                overlap_right = min(x_right, ref_right[j])
+
+                if overlap_right > overlap_left:
+                    weight = _fv_geometry_weight_integral(
+                        (overlap_left - domain_lo) / span,
+                        (overlap_right - domain_lo) / span,
+                        weight_power, r_inner, delta_r
+                    )
+                    result[i, :] += weight * ref_values[j, :]
+                    weight_total += weight
+
+                j += 1
+
+            result[i, :] /= weight_total
+
+        return result
+
+    # ------------------------------------------------------------------
+    # Reference is DG:
+    #
+    # Integrate the DG polynomial over every FV simulation cell, using the
+    # geometry weight A(r) ~ r^p of the FV degrees of freedom.
+    # ------------------------------------------------------------------
+    ref_nodes, _ = LGL_NodesWeights(ref_poly_deg)
+    ref_bary_weights = barycentric_weights(ref_poly_deg)
+
+    n_nodes_ref = ref_poly_deg + 1
+
+    ref_values = ref_values.reshape(
+        n_cells_ref, n_nodes_ref, n_comp
+    )
+
+    dx_ref = length / n_cells_ref
+    dx_sim = length / sim_n_cells
+
+    # Gauss-Legendre quadrature for cell averaging.
+    # A sufficiently high order avoids contaminating the error estimate.
+    n_quad = max(2 * ref_poly_deg + 3, 16)
+    xi_quad, w_quad = np.polynomial.legendre.leggauss(n_quad)
+
+    result = np.zeros((sim_n_cells, n_comp))
+
+    for i in range(sim_n_cells):
+        x_left = i * dx_sim
+        x_right = x_left + dx_sim
+
+        # Reference cells that overlap this FV cell.
+        j_start = max(0, int(np.floor(x_left / dx_ref)))
+        j_end = min(n_cells_ref - 1, int(np.floor(
+            np.nextafter(x_right, x_left) / dx_ref
+        )))
+
+        integral = np.zeros(n_comp)
+        weight_total = 0.0
+
+        for j in range(j_start, j_end + 1):
+            ref_x_left = j * dx_ref
+            ref_x_right = ref_x_left + dx_ref
+
+            overlap_left = max(x_left, ref_x_left)
+            overlap_right = min(x_right, ref_x_right)
+
+            if overlap_right <= overlap_left:
+                continue
+
+            # Map quadrature points from the overlap interval to
+            # physical coordinates.
+            x_quad = (
+                0.5 * (overlap_left + overlap_right)
+                + 0.5 * (overlap_right - overlap_left) * xi_quad
+            )
+
+            # Geometry weight at the quadrature points.
+            if weight_power and r_inner is not None:
+                w_geom = (r_inner + delta_r * (x_quad / length)) ** weight_power
+            else:
+                w_geom = np.ones_like(x_quad)
+
+            # Map physical coordinates to the reference cell's
+            # reference coordinate [-1, 1].
+            xi_ref = (
+                2.0 * (x_quad - ref_x_left) / dx_ref - 1.0
+            )
+
+            # Barycentric interpolation of the DG polynomial.
+            values_at_quad = np.empty(
+                (n_quad, n_comp)
+            )
+
+            for q, xi in enumerate(xi_ref):
+                diff = xi - ref_nodes
+
+                # Exact-node case.
+                exact = np.abs(diff) < 1e-14
+
+                if np.any(exact):
+                    values_at_quad[q, :] = (
+                        ref_values[j, np.argmax(exact), :]
+                    )
+                else:
+                    weights = ref_bary_weights / diff
+                    weights /= np.sum(weights)
+
+                    values_at_quad[q, :] = np.sum(
+                        weights[:, None] * ref_values[j, :, :],
+                        axis=0
+                    )
+
+            integral += (
+                0.5 * (overlap_right - overlap_left)
+                * np.sum(
+                    (w_quad * w_geom)[:, None] * values_at_quad,
+                    axis=0
+                )
+            )
+
+            weight_total += (
+                0.5 * (overlap_right - overlap_left)
+                * np.sum(w_quad * w_geom)
+            )
+
+        # Convert the weighted integral into the geometry-weighted
+        # average over the FV cell.
+        result[i, :] = integral / weight_total
+
+    return result
+
+
+def _calculate_fv_average_error_norms(
+        sim_values, ref_values, length,
+        n_cells_sim, n_cells_ref, ref_poly_deg,
+        weight_power=0, r_inner=None, r_outer=None,
+        sim_faces=None, ref_faces=None):
+    """Calculate error norms between FV cell averages and a reference."""
+
+    # FV solution consists of one value per cell.
+    sim_averages = sim_values.reshape(n_cells_sim, -1)
+
+    ref_averages = _fv_reference_cell_averages(
+        ref_values=ref_values,
+        ref_poly_deg=ref_poly_deg,
+        length=length,
+        n_cells_ref=n_cells_ref,
+        sim_n_cells=n_cells_sim,
+        weight_power=weight_power,
+        r_inner=r_inner,
+        r_outer=r_outer,
+        sim_faces=sim_faces,
+        ref_faces=ref_faces,
+    )
+
+    errors = sim_averages - ref_averages
+
+    if sim_faces is not None:
+        dx = np.diff(np.asarray(sim_faces, dtype=float))[:, None]
+    else:
+        dx = length / n_cells_sim
+
+    linf = np.max(np.abs(errors), axis=0)
+    l1 = np.sum(np.abs(errors) * dx, axis=0)
+    l2 = np.sqrt(np.sum(errors**2 * dx, axis=0))
+
+    return linf, l1, l2
+
+
+def calculate_bulk_convergence_errors(simulation_names, reference, unit,
+                                      ax_method, ref_method, time_point,
+                                      quad_points=None):
+    """Compute Linf/L1/L2 errors, min. values, cell counts and sim. times.
+
+    DG solutions are compared using the existing quadrature/interpolation
+    procedure. FV solutions (polydeg=0) are compared using cell-average
+    errors: the FV solution is treated as a set of cell averages, while the
+    reference is averaged over each FV simulation cell.
+
+    Parameters
+    ----------
+    simulation_names : list
+        Simulations (Cadet objects or h5 file names), ordered by discretization.
+    reference : string or CADET object
+        Reference simulation, which may be DG or FV.
+    unit : string
+        Unit ID (000-999).
+    ax_method : int
+        Polynomial degree (DG) or 0 (FV) of the simulations.
+    ref_method : int
+        Polynomial degree (DG) or 0 (FV) of the reference.
+    time_point : int
+        Index into the solution time axis at which errors are compared.
+    quad_points : int
+        Number of Gauss-Legendre quadrature points per cell for the DG
+        error calculation.
+
+    Returns
+    -------
+    np.array
+        Number of cells per discretization.
+    np.array
+        Linf errors.
+    np.array
+        L1 errors.
+    np.array
+        L2 errors.
+    np.array
+        Min. values per component.
+    np.array
+        Simulation compute times.
+    """
+    poly_deg = abs(ax_method)
+    ref_poly_deg = abs(ref_method)
+
+    if quad_points is None:
+        quad_points = max(2 * poly_deg + 3, 16)
+
+    # ------------------------------------------------------------------
+    # DG machinery. Only needed when the simulation is DG.
+    # ------------------------------------------------------------------
+    if poly_deg > 0:
+        nodes, _ = LGL_NodesWeights(poly_deg)
+        bary_weights = barycentric_weights(poly_deg)
+
+        if ref_poly_deg != poly_deg:
+            ref_nodes, _ = LGL_NodesWeights(ref_poly_deg)
+            ref_bary_weights = barycentric_weights(ref_poly_deg)
+        else:
+            ref_nodes, ref_bary_weights = nodes, bary_weights
+    else:
+        nodes = bary_weights = None
+        ref_nodes = ref_bary_weights = None
+
+    ref_values, _ = get_bulk_time_slice(reference, unit, time_point)
+
+    n_cells_ref = infer_bulk_n_cells(
+        ref_values, ref_poly_deg, label="reference"
+    )
+
+    # Geometry weighting of the FV degrees of freedom (radial shell/frustum);
+    # required for consistent restriction of the reference onto coarser grids.
+    if poly_deg == 0:
+        weight_power, r_inner, r_outer = _get_fv_bulk_geometry_weighting(
+            reference, unit
+        )
+    else:
+        weight_power, r_inner, r_outer = 0, None, None
+
+    n_disc = len(simulation_names)
+    n_comp = ref_values.shape[1]
+
+    n_cells_per_disc = np.zeros(n_disc, dtype=int)
+    linf_errors = np.zeros((n_disc, n_comp))
+    l1_errors = np.zeros((n_disc, n_comp))
+    l2_errors = np.zeros((n_disc, n_comp))
+    min_values = np.zeros((n_disc, n_comp))
+    sim_times = np.zeros(n_disc)
+
+    for disc_idx, simulation in enumerate(simulation_names):
+
+        sim_values, length = get_bulk_time_slice(
+            simulation, unit, time_point
+        )
+
+        n_cells_sim = infer_bulk_n_cells(
+            sim_values, poly_deg, label="simulation"
+        )
+
+        n_cells_per_disc[disc_idx] = n_cells_sim
+
+        # ==============================================================
+        # FV simulation: compare cell averages.
+        # ==============================================================
+        if poly_deg == 0:
+
+            linf, l1, l2 = _calculate_fv_average_error_norms(
+                sim_values=sim_values,
+                ref_values=ref_values,
+                length=length,
+                n_cells_sim=n_cells_sim,
+                n_cells_ref=n_cells_ref,
+                ref_poly_deg=ref_poly_deg,
+                weight_power=weight_power,
+                r_inner=r_inner,
+                r_outer=r_outer,
+            )
+
+        # ==============================================================
+        # DG simulation: retain the existing pointwise/quadrature
+        # comparison.
+        # ==============================================================
+        else:
+
+            linf, l1, l2 = calculate_bulk_error_norms(
+                sim_values, ref_values, length,
+                n_cells_sim, n_cells_ref,
+                poly_deg, quad_points,
+                nodes, bary_weights,
+                ref_poly_deg=ref_poly_deg,
+                ref_nodes=ref_nodes,
+                ref_bary_weights=ref_bary_weights
+            )
+
+        linf_errors[disc_idx, :] = linf
+        l1_errors[disc_idx, :] = l1
+        l2_errors[disc_idx, :] = l2
+
+        min_values[disc_idx, :] = np.min(
+            sim_values, axis=0
+        )
+
+        sim_times[disc_idx] = get_compute_time(simulation)
+
+    return (
+        n_cells_per_disc,
+        linf_errors,
+        l1_errors,
+        l2_errors,
+        min_values,
+        sim_times,
+    )
+
+
+def interpolate_dg_at_coordinate(values, coordinate, length, poly_deg, n_cells,
+                                 nodes, bary_weights,
+                                 interface_mode="average", node_tolerance=1e-13):
+    """Interpolate a uniform-grid DG solution at one physical spatial coordinate.
+
+    Parameters
+    ----------
+    values : np.array
+        DG solution, shape (n_cells*(poly_deg+1), n_comp) for a single time
+        slice or (n_times, n_cells*(poly_deg+1), n_comp) for a full time series.
+    coordinate : float
+        Physical axial coordinate in [0, length].
+    length : float
+        Length of the spatial 1D interval.
+    poly_deg : int
+        DG polynomial degree.
+    n_cells : int
+        Number of cells.
+    nodes : np.array
+        LGL nodes on [-1, 1] for poly_deg.
+    bary_weights : np.array
+        Barycentric weights for poly_deg.
+    interface_mode : string
+        Handling of coordinates that hit an element interface, where the DG
+        solution is double-valued: 'left', 'right', or 'average'.
+    node_tolerance : float
+        Absolute tolerance for detecting element-interface and DG-node hits.
+
+    Returns
+    -------
+    np.array
+        Interpolated values, shape (n_comp,) for 2D input and
+        (n_times, n_comp) for 3D input.
+    """
+    if interface_mode not in ("left", "right", "average"):
+        raise ValueError(
+            f"Invalid interface_mode='{interface_mode}'. "
+            "Choose one of ['average', 'left', 'right']."
+        )
+
+    values = np.asarray(values)
+    if values.ndim not in (2, 3):
+        raise ValueError(
+            f"Expected values to be 2D or 3D, got shape {values.shape}."
+        )
+
+    n_nodes = poly_deg + 1
+    spatial_axis = values.ndim - 2
+    if values.shape[spatial_axis] != n_cells * n_nodes:
+        raise ValueError(
+            f"Expected {n_cells * n_nodes} spatial DG values, "
+            f"got {values.shape[spatial_axis]}."
+        )
+
+    # nodal shape: ([n_times,] n_cells, n_nodes, n_comp)
+    nodal = values.reshape(values.shape[:spatial_axis] + (n_cells, n_nodes, values.shape[-1]))
+
+    h = length / n_cells
+    normalized_element_coordinate = coordinate / h
+
+    # element interfaces (incl. domain boundaries), where the DG solution is
+    # double-valued, are treated according to interface_mode
+    nearest_interface = int(np.round(normalized_element_coordinate))
+    if abs(normalized_element_coordinate - nearest_interface) <= node_tolerance:
+        interface_idx = max(0, min(n_cells, nearest_interface))
+
+        if interface_idx == 0:  # left domain boundary, single-valued
+            return nodal[..., 0, 0, :]
+        if interface_idx == n_cells:  # right domain boundary, single-valued
+            return nodal[..., n_cells - 1, -1, :]
+
+        left_value = nodal[..., interface_idx - 1, -1, :]
+        right_value = nodal[..., interface_idx, 0, :]
+        if interface_mode == "left":
+            return left_value
+        elif interface_mode == "right":
+            return right_value
+        return 0.5 * (left_value + right_value)
+
+    cell_idx = int(np.floor(normalized_element_coordinate))
+    cell_idx = max(0, min(n_cells - 1, cell_idx))
+    xi = 2.0 * (coordinate - cell_idx * h) / h - 1.0
+
+    # exact DG-node hits would yield 0/0 in the barycentric formula
+    diff = xi - nodes
+    hit = np.abs(diff) <= node_tolerance
+    if np.any(hit):
+        return nodal[..., cell_idx, int(np.flatnonzero(hit)[0]), :]
+
+    bary = bary_weights / diff
+    alpha = bary / np.sum(bary)
+
+    return np.einsum("n,...nc->...c", alpha, nodal[..., cell_idx, :, :], optimize=True)
+
+
+def calculate_bulk_slice_convergence_errors(simulation_names, reference, unit,
+                                            ax_method, ref_method, normed_coord,
+                                            interface_mode="average",
+                                            node_tolerance=1e-13):
+    """Compute temporal Linf/L1/L2 errors at a fixed axial coordinate for an EOC sweep.
+
+    For each simulation, the bulk solution is interpolated at the normalized
+    axial coordinate normed_coord for every solution time, yielding an
+    outlet-like time series c(z*, t) that is compared against the reference
+    interpolated at the same coordinate (normed_coord=1.0 is equivalent to the
+    outlet solution). The temporal norms are Linf = max_t |e|,
+    L1 = integral |e| dt and L2 = sqrt(integral e^2 dt) (trapezoidal rule),
+    matching scripts/bulkSliceEOC.py's reference implementation.
+
+    Parameters
+    ----------
+    simulation_names : list
+        Simulations (Cadet objects or h5 file names), ordered by discretization.
+    reference : string or CADET object
+        Reference simulation, may share or differ from ax_method's polynomial degree.
+    unit : string
+        Unit ID (000-999).
+    ax_method : int
+        Polynomial degree (DG) of the simulations.
+    ref_method : int
+        Polynomial degree (DG) of the reference.
+    normed_coord : float
+        Normalized axial evaluation coordinate z/L in [0, 1].
+    interface_mode : string
+        Handling of coordinates that hit an element interface: 'left', 'right',
+        or 'average'.
+    node_tolerance : float
+        Absolute tolerance for detecting element-interface and DG-node hits.
+
+    Returns
+    -------
+    np.array
+        Number of cells per discretization, shape (nDisc,).
+    np.array
+        Linf errors, shape (nDisc, nComp).
+    np.array
+        L1 errors, shape (nDisc, nComp).
+    np.array
+        L2 errors, shape (nDisc, nComp).
+    np.array
+        Min. values per component of the interpolated time series, shape (nDisc, nComp).
+    np.array
+        Simulation compute times, shape (nDisc,).
+    """
+    if not 0.0 <= normed_coord <= 1.0:
+        raise ValueError(
+            f"normed_coord={normed_coord} is outside [0, 1]."
+        )
+
+    poly_deg = abs(ax_method)
+    ref_poly_deg = abs(ref_method)
+    if poly_deg == 0 or ref_poly_deg == 0:
+        raise ValueError(
+            "calculate_bulk_slice_convergence_errors only supports DG discretizations."
+        )
+
+    nodes, _ = LGL_NodesWeights(poly_deg)
+    bary_weights = barycentric_weights(poly_deg)
+    if ref_poly_deg != poly_deg:
+        ref_nodes, _ = LGL_NodesWeights(ref_poly_deg)
+        ref_bary_weights = barycentric_weights(ref_poly_deg)
+    else:
+        ref_nodes, ref_bary_weights = nodes, bary_weights
+
+    ref_sim = get_simulation(reference)
+    length = float(sim_go_to(ref_sim.root, ['input', 'model', 'unit_' + unit, 'bed_length']))
+    ref_bulk = np.array(sim_go_to(ref_sim.root, ['output', 'solution', 'unit_' + unit, 'solution_bulk']))
+    ref_times = np.asarray(get_solution_times(ref_sim), dtype=float)
+    n_cells_ref = infer_bulk_n_cells(ref_bulk[0, :, :], ref_poly_deg, label="reference")
+
+    coordinate = normed_coord * length
+    ref_eval = interpolate_dg_at_coordinate(
+        ref_bulk, coordinate, length, ref_poly_deg, n_cells_ref,
+        ref_nodes, ref_bary_weights,
+        interface_mode=interface_mode, node_tolerance=node_tolerance
+    )
+
+    n_disc = len(simulation_names)
+    n_comp = ref_bulk.shape[2]
+
+    n_cells_per_disc = np.zeros(n_disc, dtype=int)
+    linf_errors = np.zeros((n_disc, n_comp))
+    l1_errors = np.zeros((n_disc, n_comp))
+    l2_errors = np.zeros((n_disc, n_comp))
+    min_values = np.zeros((n_disc, n_comp))
+    sim_times = np.zeros(n_disc)
+
+    for disc_idx, simulation in enumerate(simulation_names):
+        sim = get_simulation(simulation)
+        sim_bulk = np.array(sim_go_to(sim.root, ['output', 'solution', 'unit_' + unit, 'solution_bulk']))
+        sim_solution_times = np.asarray(get_solution_times(sim), dtype=float)
+        if sim_solution_times.shape != ref_times.shape or not np.allclose(
+                sim_solution_times, ref_times, rtol=0.0, atol=node_tolerance):
+            raise ValueError(
+                "Simulation and reference time vectors are not identical. "
+                "The bulk slice temporal EOC analysis requires the same time "
+                "points for all simulations and the reference."
+            )
+
+        n_cells_sim = infer_bulk_n_cells(sim_bulk[0, :, :], poly_deg, label="simulation")
+        n_cells_per_disc[disc_idx] = n_cells_sim
+
+        sim_eval = interpolate_dg_at_coordinate(
+            sim_bulk, coordinate, length, poly_deg, n_cells_sim,
+            nodes, bary_weights,
+            interface_mode=interface_mode, node_tolerance=node_tolerance
+        )
+
+        abs_err = np.abs(sim_eval - ref_eval)
+        linf_errors[disc_idx, :] = np.max(abs_err, axis=0)
+        l1_errors[disc_idx, :] = np.trapezoid(abs_err, x=ref_times, axis=0)
+        l2_errors[disc_idx, :] = np.sqrt(np.trapezoid(abs_err ** 2, x=ref_times, axis=0))
+        min_values[disc_idx, :] = np.min(sim_eval, axis=0)
+        sim_times[disc_idx] = get_compute_time(simulation)
+
+    return n_cells_per_disc, linf_errors, l1_errors, l2_errors, min_values, sim_times
+
+
 def get_interpolated_solution(orig_values, orig_coords, domain_end, output_coords, polyDeg, nCells):
     """Calculate weighted error of solution.
 
     Parameters
     ----------
     orig_values : np.array
-        Solution to be interpolated.
+        Solution to be interpolated, sorted along orig_coords.
     orig_coords : np.array
-        Coordinate vector of solution.
+        Coordinate vector of solution in ascending order.
     domain_end : float
         Length of spatial 1D interval
     output_coords : np.array
@@ -1211,7 +2194,7 @@ def get_interpolated_solution(orig_values, orig_coords, domain_end, output_coord
     np.array
         Solution at output_coords.
     """
-    if np.any(output_coords > domain_end) or np.any(output_coords < 0.0):
+    if np.any(output_coords - domain_end > 1e-17) or np.any(output_coords < 0.0):
         raise ValueError(
             "get_interpolated_solution: Output coordinates not within [0, L]"
         )
@@ -1246,10 +2229,23 @@ def get_interpolated_solution(orig_values, orig_coords, domain_end, output_coord
     if polyDeg == 0:
 
         cellIdx = 0
+        coordHit = False
+        
         for outputIdx in range(len(output_coords)):
+            
             while orig_coords[cellIdx] + 0.5 * deltaZ < output_coords[outputIdx]:
-                cellIdx += 1
-            output_values[outputIdx] = orig_values[cellIdx]
+                
+                if abs(orig_coords[cellIdx] + 0.5 * deltaZ - output_coords[outputIdx]) < 1E-15:
+                    coordHit = True # if the coordinate is hit exactly, we take the average value, except for the right boundary
+                    break
+                else:
+                    cellIdx += 1 # increase the index until the output coord is within the current FV cell
+
+            if coordHit and not cellIdx == len(orig_coords) - 1: # if the coordinate is hit exactly, we take the average value, except for the right boundary
+                output_values[outputIdx] = 0.5 * (orig_values[cellIdx] + orig_values[cellIdx + 1])
+                
+            else:
+                output_values[outputIdx] = orig_values[cellIdx]
 
         return output_values
 
@@ -1295,115 +2291,6 @@ def get_interpolated_solution(orig_values, orig_coords, domain_end, output_coord
                     cellIdx + 1) * nNodes]).sum() / (bary_weights / (mapped_coord - nodes)).sum()
 
     return output_values
-
-
-def test_get_interpolated_DGsolution():
-
-    polyDeg = 4
-    nCells = 30
-    column_length = 1.0
-
-    deltaZ = column_length / nCells
-    nNodes = (polyDeg + 1)
-    nPoints = nNodes * nCells
-    nodes, weights = LGL_NodesWeights(polyDeg)
-
-    x_l = np.linspace(0.0, column_length, num=nCells, endpoint=False)
-
-    # print("x_l:\n", x_l)
-
-    orig_coords = np.zeros(nPoints)
-    orig_values = np.zeros(nPoints)
-
-    for cellIdx in range(nCells):
-        orig_coords[cellIdx * nNodes: (cellIdx + 1) *
-                    nNodes] = map_xi_to_z(nodes, cellIdx, deltaZ)
-
-    # print("orig_coords:\n", orig_coords)
-
-    # test linear concentration function
-    orig_values = orig_coords
-    output_coords = np.linspace(
-        0.0, column_length, num=2*nPoints, endpoint=True)
-
-    output_values = get_interpolated_solution(
-        orig_values, orig_coords, column_length, output_coords, polyDeg, nCells)
-
-    np.testing.assert_almost_equal(output_values, output_coords, decimal=14)
-
-    # test quadratic concentration function
-    out_polyDeg = 3
-    out_nodes, out_weights = LGL_NodesWeights(polyDeg)
-    for cellIdx in range(nCells*2):
-        output_coords[cellIdx * nNodes: (cellIdx + 1) *
-                      nNodes] = map_xi_to_z(out_nodes, cellIdx, deltaZ/2)
-    orig_values = np.square(orig_coords)
-    # output_coords = np.linspace(0.0, column_length, num=int(nPoints/2), endpoint=True)
-    output_values = get_interpolated_solution(
-        orig_values, orig_coords, column_length, output_coords, polyDeg, nCells)
-
-    np.testing.assert_almost_equal(
-        output_values, np.square(output_coords), decimal=14)
-
-    # test sinus concentration function (limited accuracy)
-    orig_values = np.sin(orig_coords)
-    output_values = get_interpolated_solution(
-        orig_values, orig_coords, column_length, output_coords, polyDeg, nCells)
-
-    np.testing.assert_almost_equal(
-        output_values, np.sin(output_coords), decimal=6)
-
-    # print("output_coords:\n", output_coords)
-    # print("output_values:\n", output_values)
-
-    # test two dimensional array
-    output_coords = np.linspace(0.0, column_length, num=nPoints, endpoint=True)
-    nTime = 10
-    orig_values = np.zeros((nTime, nPoints))
-    orig_values[0, :] = np.square(orig_coords)
-    orig_values[5, :] = np.power(orig_coords, polyDeg)
-    compare = np.zeros((nTime, nPoints))
-    compare[0, :] = np.square(output_coords)
-    compare[5, :] = np.power(output_coords, polyDeg)
-
-    output_values = get_interpolated_solution(
-        orig_values, orig_coords, column_length, output_coords, polyDeg, nCells)
-
-    np.testing.assert_almost_equal(output_values, compare, decimal=14)
-
-    # test three dimensional array
-    nTime = 12
-    nComp = 3
-    orig_values = np.zeros((nTime, nPoints, nComp))
-    orig_values[0, :, 0] = np.square(orig_coords)
-    orig_values[3, :, 0] = np.power(orig_coords, polyDeg)
-    orig_values[7, :, 2] = np.power(orig_coords, polyDeg - 1)
-    compare = np.zeros((nTime, nPoints, nComp))
-    compare[0, :, 0] = np.square(output_coords)
-    compare[3, :, 0] = np.power(output_coords, polyDeg)
-    compare[7, :, 2] = np.power(output_coords, polyDeg - 1)
-
-    output_values = get_interpolated_solution(
-        orig_values, orig_coords, column_length, output_coords, polyDeg, nCells)
-
-    np.testing.assert_almost_equal(output_values, compare, decimal=14)
-
-    # # test runtime for three dimensional array
-    # nTime = 1000  # for 10000 already couple seconds -> enhance get_interpolated_solution?
-    # nComp = 4
-    # orig_values = np.zeros((nTime, nPoints, nComp))
-    # orig_values[476, :, 0] = np.square(orig_coords)
-    # orig_values[100, :, 1] = np.power(orig_coords, polyDeg)
-    # orig_values[20, :, 3] = np.power(orig_coords, polyDeg - 1)
-    # compare = np.zeros((nTime, nPoints, nComp))
-    # compare[476, :, 0] = np.square(output_coords)
-    # compare[100, :, 1] = np.power(output_coords, polyDeg)
-    # compare[20, :, 3] = np.power(output_coords, polyDeg - 1)
-
-    # output_values = get_interpolated_solution(
-    #     orig_values, orig_coords, column_length, output_coords, polyDeg, nCells)
-
-    # np.testing.assert_almost_equal(output_values, compare, decimal=14)
 
 
 def get_unique_DGcoordinates(coords):
@@ -1459,56 +2346,6 @@ def get_unique_DGsolution_slice(polyDeg, solution):
             out.append(solution[nodeIdx])  # Boundary interface
 
     return out
-
-
-def test_get_unique_DGsolution():
-
-    nCells = 3
-    polyDeg = 3
-    nComp = 2
-    timePoints = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    nTime = len(timePoints)
-
-    nNodes = polyDeg + 1
-    nPoints = nCells*nNodes
-    solution = np.zeros((nTime, nCells*nNodes, nComp))
-    compare = np.zeros((nTime, nCells*nNodes-nCells+1, nComp))
-
-    # fill timepoints
-    for nodeIdx in range(nPoints):
-        for compIdx in range(nComp):
-            solution[:, nodeIdx, compIdx] = timePoints
-            if nodeIdx < nCells*nNodes-nCells+1:
-                compare[:, nodeIdx, compIdx] = timePoints
-
-    solution[0, :, 0] = np.ones(nPoints)
-    compare[0, :, 0] = np.ones(nCells*nNodes-nCells+1)
-    solution[0, :, 1] = [1, 2, 3, 4,
-                         5, 6, 7, 8,
-                         9, 10, 11, 12]
-    compare[0, :, 1] = [1, 2, 3, 4.5, 6, 7, 8.5, 10, 11, 12]
-    solution[6, :, 1] = [1, 2, 3, 4,
-                         5, 6, 7, 8,
-                         9, 10, 11, 12]
-    compare[6, :, 1] = [1, 2, 3, 4.5, 6, 7, 8.5, 10, 11, 12]
-
-    # Test single space slice
-    np.testing.assert_array_equal(get_unique_DGsolution(
-        polyDeg, np.ones(nPoints)), np.ones(nPoints-nCells+1))
-    np.testing.assert_array_equal(get_unique_DGsolution(
-        polyDeg, solution[0, :, 1]), compare[0, :, 1])
-
-    # Test full time x space x comp array
-    test = get_unique_DGsolution(polyDeg, solution)
-    np.testing.assert_array_equal(test, compare)
-
-    # Test unique DG coords
-    coords = [0, 0.1, 0.5, 0.9, 1.0, 1.0, 1.1,
-              1.5, 1.9, 2.0, 2.0, 2.1, 2.5, 2.9, 3.0]
-    compare_coords = [0, 0.1, 0.5, 0.9, 1.0,
-                      1.1, 1.5, 1.9, 2.0, 2.1, 2.5, 2.9, 3.0]
-    np.testing.assert_array_equal(
-        get_unique_DGcoordinates(coords), compare_coords)
 
 
 def calculate_bulk_L1_error(polyDeg, mapJac, solution, reference=-1, weights=-1):
@@ -1573,53 +2410,6 @@ def calculate_bulk_L1_error(polyDeg, mapJac, solution, reference=-1, weights=-1)
     return L1error
 
 
-def calculate_summed_bulk_L1_error(solution, reference, polyDeg, mapJac, comp=-1, nComp=1, deltaT=1.0):
-    """Calculate L_1 error of DG bulk solution cumulated over time.
-
-    Parameters
-    ----------
-    solution : np.array
-        Solution or errors of simulation.
-    reference : np.array
-        (exact) reference solution.
-    polyDeg : int
-        DG polynomial degree
-    mapJac : float
-        Mapping Jacobian
-    comp : int
-        Component index of interest, defaults to -1 to consider all components
-    nComp : int
-        Number of components
-    polyDeg : float
-        Timestep size
-
-    Returns
-    -------
-    float
-        L1 error.
-    """
-
-    solution = np.array(solution)
-    reference = np.array(reference)
-
-    nodes, weights = LGL_NodesWeights(polyDeg)
-
-    L1error = 0.0
-
-    if nComp == 1:  # shape is time, space
-        for t in range(solution.shape[0]):
-            L1error += calculate_bulk_L1_error(
-                solution[t, :], reference[t, :], polyDeg, mapJac, weights)
-    elif comp == -1:  # shape is time, space, comp, all components wanted
-        for t in range(solution.shape[0]):
-            L1error += calculate_bulk_L1_error(
-                solution[t, :, :], reference[t, :, :], polyDeg, mapJac, weights)
-    else:  # shape is time, space, comp, one component wanted
-        for t in range(solution.shape[0]):
-            L1error += calculate_bulk_L1_error(
-                solution[t, :, comp], reference[t, :, comp], polyDeg, mapJac, weights)
-
-
 def calculate_L1_error(solution, reference=-1, weights=1.0):
     """Calculate L_1 error of solution.
 
@@ -1659,23 +2449,86 @@ def calculate_L2_error(solution, reference=-1, weights=1.0):
         return np.sqrt(np.sum(np.square(solution - reference))) * weights
 
 
-def calculate_average_error(solution, reference):
-    """Calculate average error of solution.
+def get_case_insensitive(d, key):
+    key = key.lower()
+    for k, v in d.items():
+        if k.lower() == key:
+            if isinstance(v, bytes):
+                v = v.decode("utf-8")
+            return v
+    return None
 
-    Parameters
-    ----------
-    solution : np.array
-        Solution or errors of simulation.
-    reference : np.array
-        (exact) reference solution.
+def generate_bulkDisc_name(disc):
+    
+    name = get_case_insensitive(disc, 'SPATIAL_METHOD')
+    
+    suffix = ""
+    
+    if get_case_insensitive(disc, 'GRID_FACES') is not None:
+        
+        grid = np.array(get_case_insensitive(disc, 'GRID_FACES'))
+        
+        is_equidistant = np.allclose(np.diff(grid), np.diff(grid)[0])
+        
+        suffix = "" if  is_equidistant else "nonEq"
+    elif get_case_insensitive(disc, 'AXIAL_GRID_FACES') is not None:
+        
+        grid = np.array(get_case_insensitive(disc, 'AXIAL_GRID_FACES'))
+        
+        is_equidistant = np.allclose(np.diff(grid), np.diff(grid)[0])
+        
+        suffix = "" if  is_equidistant else "nonEq"
 
-    Returns
-    -------
-    np.array
-        Average Error.
-    """
-    return np.calculate_weighted_error(solution, reference, 1.0)
+    if name == "FV":
+        
+        if get_case_insensitive(disc, 'RECONSTRUCTION') == "WENO":
+            return name + "WENO" + str(get_case_insensitive(disc['weno'], 'WENO_ORDER')) + suffix
+        else:
+            if get_case_insensitive(disc, 'RECONSTRUCTION') is None:
+                 return name + suffix
+            return name + get_case_insensitive(disc, 'RECONSTRUCTION') + suffix
+        
+    elif name == "DG":
+          
+        # todo once implemented: non-eq
+        
+        # USE_COLLOCATION_DG = 1 selects collocation DG, 0 selects exact integration DG.
+        # If the field is absent, CADET-Core defaults to collocation DG on axial cylinders.
+        collocation = get_case_insensitive(disc, "USE_COLLOCATION_DG")
+        exInt = False if collocation is None else not collocation
+        name = "exIntDG" if exInt else "DG" # "cDG"
+        
+        polyDeg = get_case_insensitive(disc, "POLYDEG")
+        if polyDeg is None:
+            polyDeg = get_case_insensitive(disc, "AX_POLYDEG")
+        if polyDeg is None:
+            return name
+        return name + "_P" + str(polyDeg)
+    else:
+        return name
 
+
+def generate_parDisc_name(disc, bulkDiscName=None):
+    
+    name = "par" + get_case_insensitive(disc, 'SPATIAL_METHOD')
+    
+    suffix = ""
+    
+    if get_case_insensitive(disc, 'PAR_DISC_TYPE') is not None:
+        suffix = "" if get_case_insensitive(disc, 'PAR_DISC_TYPE') == "EQUIDISTANT_PAR" else "nonEq"
+    
+    if name == "parFV":
+        if suffix == "" and re.search("FV", bulkDiscName):
+            return ""
+        return name + suffix
+        
+    elif name == "parDG":
+        polyDeg = get_case_insensitive(disc, "PAR_POLYDEG")
+        if polyDeg is None:
+            return "" if suffix == "" and re.search("DG", bulkDiscName) and re.search(f"P{polyDeg}", bulkDiscName) else name + suffix
+        return "parP" + str(polyDeg) + suffix
+    else:
+        return name + suffix
 
 def generate_1D_name(prefix, axP, axCells, suffix='.h5'):
     """Generate simulation name for bulk discretized models (LRMP, LRM).
@@ -1761,30 +2614,6 @@ def generate_simulation_names_1D(prefix, methods, disc, suffix='.h5'):
                 _simulation_names.append(name)
 
     return _simulation_names
-
-
-def test_generate_simulation_names_1D():
-
-    prefix = "LinearLRM1Comp"
-    methods = [1]
-    disc = [1, 2, 4]
-    names = np.array(generate_simulation_names_1D(prefix, methods, disc))
-    expected_names = np.array([prefix+"_DG_P1Z1",
-                              prefix+"_DG_P1Z2",
-                              prefix+"_DG_P1Z4"])
-    np.testing.assert_array_equal(names, expected_names)
-
-    methods = [2, -3]
-    disc = [[2, 4, 8], [1, 2, 4]]
-    names = np.array(generate_simulation_names_1D(prefix, methods, disc))
-    expected_names = np.array([prefix+"_DG_P2Z2",
-                              prefix+"_DG_P2Z4",
-                              prefix+"_DG_P2Z8",
-                              prefix+"_DGexInt_P3Z1",
-                              prefix+"_DGexInt_P3Z2",
-                              prefix+"_DGexInt_P3Z4"
-                               ])
-    np.testing.assert_array_equal(names, expected_names)
 
 
 def generate_2D_name(prefix, axP, axCells, radP, radCells, suffix='.h5'):
@@ -1937,10 +2766,19 @@ def generate_GRM_name(prefix, axP, axCells, parP, parCells, parGSM=True, suffix=
     elif int(axP) < 0 and int(parP) < 0:
         return prefix + "_DGexInt_P" + str(int(abs(axP))) + "Z" + str(int(axCells)) + "_cDG_parP" + str(int(abs(parP))) + "parZ" + str(int(parCells)) + suffix
 
-    elif int(parP) == 0:
-        raise Exception(
-            "Particle polynomial degree must be >= 1 for DG models")
-    else:
+    elif int(axP) > 0 and int(parP) == 0:
+        return prefix + "_cDG_P" + str(int(abs(axP))) + "Z" + str(int(axCells)) + "_FVparZ" + str(int(parCells)) + suffix
+
+    elif int(axP) < 0 and int(parP) == 0:
+        return prefix + "_DGexInt_P" + str(int(abs(axP))) + "Z" + str(int(axCells)) + "_FVparZ" + str(int(parCells)) + suffix
+
+    elif int(axP) == 0 and int(parP) > 0:
+        if int(parCells) == 1 and parGSM:
+            return prefix + "_FV_Z" + str(int(axCells)) + "_GSM_parP" + str(int(abs(parP))) + "parZ" + str(int(parCells)) + suffix
+        else:
+            return prefix + "_FV_Z" + str(int(axCells)) + "_DG_parP" + str(int(abs(parP))) + "parZ" + str(int(parCells)) + suffix
+
+    else: # parP < 0 not supported
         return None
 
 
@@ -2062,50 +2900,6 @@ def generate_simulation_names_GRM(
                 _simulation_names.append(name)
 
     return _simulation_names
-
-
-def test_generate_simulation_names_GRM():
-
-    prefix = "LinearGRM2Comp"
-    ax_methods = [2]
-    par_methods = [1]
-    ax_cells = [8]
-    par_cells = [1]
-    names = np.array(generate_simulation_names_GRM(
-        prefix, ax_methods, ax_cells, par_methods, par_cells, suffix='.hmpf'))
-    expected_names = np.array([prefix+"_DG_P2Z8parP1parZ1.hmpf"])
-    np.testing.assert_array_equal(names, expected_names)
-
-    ax_methods = [2]
-    par_methods = [1]
-    ax_cells = [8, 16, 32]
-    par_cells = [1, 2, 4]
-    names = np.array(generate_simulation_names_GRM(
-        prefix, ax_methods, ax_cells, par_methods, par_cells))
-    expected_names = np.array([prefix+"_DG_P2Z8parP1parZ1.h5",
-                              prefix+"_DG_P2Z16parP1parZ2.h5",
-                              prefix+"_DG_P2Z32parP1parZ4.h5"])
-    np.testing.assert_array_equal(names, expected_names)
-
-    ax_methods = [0, 0,  -2, 3]
-    par_methods = [-1, 0,  2, 3]
-    ax_cells = [[8, 16, 32], [8, 16, 32], [8, 16, 32], [8, 16, 32]]
-    par_cells = [[1, 2, 4], [1, 2, 4], [1, 2, 4], [1, 2, 4]]
-    names = np.array(generate_simulation_names_GRM(
-        prefix, ax_methods, ax_cells, par_methods, par_cells))
-    expected_names = np.array([
-        prefix+"_FV_Z8parZ1.h5",
-        prefix+"_FV_Z16parZ2.h5",
-        prefix+"_FV_Z32parZ4.h5",
-        prefix+"_DGexInt_P2Z8parP2parZ1.h5",
-        prefix+"_DGexInt_P2Z16parP2parZ2.h5",
-        prefix+"_DGexInt_P2Z32parP2parZ4.h5",
-        prefix+"_DG_P3Z8parP3parZ1.h5",
-        prefix+"_DG_P3Z16parP3parZ2.h5",
-        prefix+"_DG_P3Z32parP3parZ4.h5",
-    ])
-
-    np.testing.assert_array_equal(names, expected_names)
 
 
 def generate_simulation_names_2DGRM(
@@ -2245,35 +3039,6 @@ def generate_simulation_names(
             return generate_simulation_names_2DGRM(
                 prefix, ax_methods, ax_cells, rad_methods, rad_cells,
                 par_methods, par_cells, suffix)
-
-
-def test_generate_simulation_names():
-
-    with pytest.raises(ValueError):
-        names = np.array(generate_simulation_names("prefix", [0], [2, 4], [1]))
-
-    methods = [2, -3]
-    disc = [[2, 4, 8], [1, 2, 4]]
-    prefix = "prefix"
-    names = np.array(generate_simulation_names(prefix, methods, disc))
-    expected_names = np.array([prefix+"_DG_P2Z2.h5",
-                              prefix+"_DG_P2Z4.h5",
-                              prefix+"_DG_P2Z8.h5",
-                              prefix+"_DGexInt_P3Z1.h5",
-                              prefix+"_DGexInt_P3Z2.h5",
-                              prefix+"_DGexInt_P3Z4.h5"
-                               ])
-    np.testing.assert_array_equal(names, expected_names)
-
-    methods = [0]
-    disc = [2, 4, 8]
-    prefix = "prefix"
-    names = np.array(generate_simulation_names(prefix, methods, disc))
-    expected_names = np.array([prefix+"_FV_Z2.h5",
-                              prefix+"_FV_Z4.h5",
-                              prefix+"_FV_Z8.h5"
-                               ])
-    np.testing.assert_array_equal(names, expected_names)
 
 
 def std_name_prefix(transport_model, binding_model, dyn=None, n_comp=None):
@@ -2449,8 +3214,10 @@ def calculate_DOFs(discretization, method=np.array([3]), nComp=1,
     method : np.array
         Discretization method, i.e. polynomial degree(s) of method with FV -> 0.
         Multiple polynomial degrees must be specified for GRM, i.e. [bulk, particle].
+    full_DOFs : Bool
+        Determines whether all DOFs should be considered, i.e. including flux and particle states,
     model : string
-        Chromatography model (LRMP, LRM, GRM), only required for LRM and LRMP
+        Model such as LRM, GRM, LRMP, MCT, DPFR, COL1D, ...
     nComp : int
         Number of components
     nBound : int
@@ -2487,18 +3254,21 @@ def calculate_DOFs(discretization, method=np.array([3]), nComp=1,
                     "Method and discretization must have feasible dimensionalities, look up description."
                 )
 
+    if model is None:
+        nBound = 0
     if nBound == None:
-        nBound = nComp
+        nBound = 0 if re.search("DPFR", model) else nComp
 
     bulk_dof = 0
     par_dof = 0
     flux_dof = 0
 
-    if model is None or not re.search("2D", model):
+    if model is None or not (re.search("2D", model) or re.search("MCT", model)):
         
         inlet_dof = nComp if full_DOFs else 0
         
         if discretization.ndim == 2:  # GRM
+
             bulk_dof = (abs(method[0]) + 1) * discretization[0, :] * nComp
             if full_DOFs:
                 if method[0] == 0:  # add flux states for FV discretization
@@ -2508,14 +3278,14 @@ def calculate_DOFs(discretization, method=np.array([3]), nComp=1,
                     * ((abs(method[1]) + 1) * discretization[1, :] * (nComp + nBound))
                 )
     
-        elif discretization.ndim in [0, 1]:  # LRM or LRMP
+        elif discretization.ndim in [0, 1]:  # LRM or LRMP or DPFR
             bulk_dof = (abs(method) + 1) * discretization * nComp
             if full_DOFs:
-                if model == "LRMP":
+                if model.upper() == "LRMP":
                     par_dof = (nComp + nBound) * abs(method+1) * discretization
                     if method == 0:  # add flux states for FV discretization
                         flux_dof = bulk_dof
-                elif model == "LRM":
+                elif model.upper() in ("LRM", "COL1D", "DPFR"):
                     par_dof = nBound * abs(method+1) * discretization
                 else:
                     raise ValueError(
@@ -2526,6 +3296,9 @@ def calculate_DOFs(discretization, method=np.array([3]), nComp=1,
         return inlet_dof + bulk_dof + flux_dof + par_dof
     
     else:
+        
+        if re.search("MCT", model):
+            return (abs(method) + 1) * discretization * nComp
         
         inlet_dof = nComp * (method[1] + 1) * discretization[1, :] if full_DOFs else 0
         
@@ -2541,11 +3314,11 @@ def calculate_DOFs(discretization, method=np.array([3]), nComp=1,
     
         if discretization.ndim == 3:  # 2D GRM
             if full_DOFs:
-                if re.search(model, "LRMP"):
+                if re.search("LRMP", model):
                     par_dof = (nComp + nBound) * bulk_dof
-                elif re.search(model, "LRM"):
+                elif re.search("LRM", model):
                     par_dof = (nComp + nBound) * bulk_dof
-                elif re.search(model, "GRM"):
+                elif re.search("GRM", model):
                     par_dof = (nComp + nBound) * (method[2] + 1) * discretization[2, :] * bulk_dof
                 else:
                     raise ValueError(
@@ -2554,87 +3327,6 @@ def calculate_DOFs(discretization, method=np.array([3]), nComp=1,
                     )
             
         return inlet_dof + bulk_dof + par_dof + flux_dof
-
-
-def test_calculate_DOFs():
-
-    # test GRM
-    disc = [[4, 8, 10, 32], [1, 2, 3, 5]]
-    method = [3, 2]
-    nComp = 3
-    nBound = nComp
-
-    inletDOFs = np.array([1, 1, 1, 1]) * nComp
-    bulkDOFs = (method[0] + 1) * np.array(disc[0]) * nComp
-    fluxDOFs = bulkDOFs
-    parDOFs = np.multiply(
-        (nComp + nBound) * (method[1] + 1) * np.array(disc[1]),
-        (method[0] + 1) * np.array(disc[0])
-    )
-    DOFs = inletDOFs + bulkDOFs + fluxDOFs + parDOFs
-
-    np.testing.assert_array_equal(
-        bulkDOFs,
-        calculate_DOFs(disc, method, nComp=nComp, full_DOFs=False)
-    )
-    np.testing.assert_array_equal(
-        DOFs,
-        calculate_DOFs(disc, method, nComp=nComp, full_DOFs=True)
-    )
-
-    # test LRM
-    disc = [4, 8, 10, 32]
-    method = [1]
-    nComp = 3
-    nBound = 4
-
-    inletDOFs = np.array([1, 1, 1, 1]) * nComp
-    bulkDOFs = (method[0] + 1) * np.array(disc) * nComp
-    parDOFs = (method[0] + 1) * np.array(disc) * nBound
-    DOFs = inletDOFs + bulkDOFs + parDOFs
-
-    np.testing.assert_array_equal(
-        bulkDOFs,
-        calculate_DOFs(disc, method, nComp=nComp, nBound=nBound,
-                       full_DOFs=False,
-                       model="LRM")
-    )
-    np.testing.assert_array_equal(
-        DOFs,
-        calculate_DOFs(disc, method, nComp=nComp, nBound=nBound,
-                       full_DOFs=True,
-                       model="LRM")
-    )
-
-    # test LRMP
-    disc = [4, 8, 10, 32]
-    method = [1]
-    nComp = 3
-    nBound = 4
-
-    inletDOFs = np.array([1, 1, 1, 1]) * nComp
-    bulkDOFs = (method[0] + 1) * np.array(disc) * nComp
-    parDOFs = (method[0] + 1) * np.array(disc) * (nComp + nBound)
-    DOFs = inletDOFs + bulkDOFs + parDOFs
-
-    np.testing.assert_array_equal(
-        bulkDOFs,
-        calculate_DOFs(disc, method, nComp=nComp, nBound=nBound,
-                       full_DOFs=False,
-                       model="LRMP")
-    )
-    method = [0]  # FV, i.e. with flux
-    inletDOFs = np.array([1, 1, 1, 1]) * nComp
-    bulkDOFs = (method[0] + 1) * np.array(disc) * nComp
-    fluxDOFs = bulkDOFs
-    parDOFs = (method[0] + 1) * np.array(disc) * (nComp + nBound)
-    DOFs = inletDOFs + bulkDOFs + fluxDOFs + parDOFs
-    np.testing.assert_array_equal(
-        DOFs,
-        calculate_DOFs(disc, method, nComp=nComp, nBound=nBound,
-                       full_DOFs=True,
-                       model="LRMP")
-    )
 
 
 def calculate_eoc(discretization, error):
@@ -2677,31 +3369,6 @@ def calculate_eoc(discretization, error):
     ratio_error = error[1:]/error[:-1]
 
     return np.log2(ratio_error)/np.log2(ratio_discretization)
-
-
-def test_eoc():
-    dof = [1, 2, 4, 8, 16]
-    error = [0.1, 0.05, 0.025, 0.0125, 0.00625]
-
-    eoc_expected = [1, 1, 1, 1]
-    eoc = calculate_eoc(dof, error)
-
-    np.testing.assert_almost_equal(eoc, eoc_expected)
-
-    with pytest.raises(ValueError):
-        dof_zero = [1, 2, 4, 8, 0]
-        eoc = calculate_eoc(dof_zero, error)
-
-    with pytest.raises(ValueError):
-        error_smaller_zero = [-0.1, 0.05, 0.025, 0.0125, 0.00625]
-        eoc = calculate_eoc(dof, error_smaller_zero)
-
-    # Test eps
-    error_zero = [0.1, 0.05, 0.025, 0.0125, 0]
-
-    eoc_expected = [1, 1, 1, 45.67807191]
-    eoc = calculate_eoc(dof, error_zero)
-    np.testing.assert_almost_equal(eoc, eoc_expected)
 
 
 """
@@ -2761,16 +3428,14 @@ def convergency_table(method,
     """
     disc = np.array(disc)
     error_types = np.array(error_types)
-    abs_errors = np.abs(np.array(abs_errors, dtype=object))
+    abs_errors = np.array(abs_errors)
     header = []
     header.append("$N_e^z$")
     table = []
     # Infer dimensionality of table
-    offRow = 1
     if disc.ndim == 2:
         if len(disc) == 3 and (transport_model is not None and re.search("2D", transport_model)): # 2DGRM
             nDisc = disc.shape[1]
-            offCol = 3
             header.append("$N_e^r$")
             header.append("$N_e^p$")
             table.append(disc[0])
@@ -2778,19 +3443,16 @@ def convergency_table(method,
             table.append(disc[2])
         elif len(disc) == 2 and (transport_model is not None and re.search("2D", transport_model)): # 2D LRM or LRMP
             nDisc = disc.shape[1]
-            offCol = 2
             header.append("$N_e^r$")
             table.append(disc[0])
             table.append(disc[1])
         elif len(disc) == 2: # GRM
             nDisc = disc.shape[1]
-            offCol = 2
             header.append("$N_e^p$")
             table.append(disc[0])
             table.append(disc[1])
-    elif (disc.ndim == 1):   # LRMP, LRM
+    elif (disc.ndim == 1):   # LRMP, LRM, MCT
         nDisc = len(disc)
-        offCol = 1
         table.append(disc)
     else:
         raise ValueError(
@@ -2813,8 +3475,6 @@ def convergency_table(method,
                 raise ValueError(
                     "Not the same number of discretizations as errors."
                 )
-
-    DOFs = calculate_DOFs(disc, method, full_DOFs=full_DOFs, model=transport_model)
 
     # Main loop: calculate all errors and EOC's
     for error_type in range(0, len(error_types)):
@@ -2902,67 +3562,6 @@ def convergency_table(method,
         table.append(get_compute_times(sim_names))
 
     return header, np.array(table).transpose()
-
-
-def test_convergency_table():
-
-    # GRM test for L1/max error
-    expected_order = 3
-    method = np.array([1, 1]) * (expected_order - 1)
-    discretizations = [[4, 8, 16], [1, 2, 4]]
-    full_DOFs = False
-
-    error_type = ["max"]
-    initial_errors = np.random.rand(100)
-    error_factors = np.zeros(len(discretizations[0]))
-    for i in range(0, len(error_factors)):
-        error_factors[i] = 2 ** (expected_order * i)
-    abs_errors = np.zeros([len(error_factors), len(initial_errors)])
-
-    for factor in range(0, len(error_factors)):
-        abs_errors[factor] = initial_errors / error_factors[factor]
-
-    header, table = convergency_table(method=method, disc=discretizations, abs_errors=abs_errors,
-                                      error_types=error_type, full_DOFs=full_DOFs)
-
-    np.testing.assert_array_equal(header, np.array(
-        ["$N_e^z$", "$N_e^p$", 'Max. error', 'Max. EOC']))
-    np.testing.assert_almost_equal(
-        table[:, 0], discretizations[0])  # check axial disc
-    np.testing.assert_almost_equal(
-        table[:, 1], discretizations[1])  # check particle disc
-    np.testing.assert_almost_equal(
-        table[:, 2], np.amax(abs_errors, axis=1))  # check errors
-    np.testing.assert_almost_equal(table[1:, 3], np.ones(
-        len(discretizations[0])-1) * expected_order)  # check EOC
-
-    # LRMP/LRM test for L1/max error
-    expected_order = 3
-    method = (expected_order - 1)
-    discretizations = [4, 8, 16]
-    full_DOFs = False
-
-    error_type = ["max"]
-    initial_errors = np.random.rand(100)
-    error_factors = np.zeros(len(discretizations))
-    for i in range(0, len(error_factors)):
-        error_factors[i] = 2 ** (expected_order * i)
-    abs_errors = np.zeros([len(error_factors), len(initial_errors)])
-
-    for factor in range(0, len(error_factors)):
-        abs_errors[factor] = initial_errors / error_factors[factor]
-
-    header, table = convergency_table(method=method, disc=discretizations, abs_errors=abs_errors,
-                                      error_types=error_type, full_DOFs=full_DOFs)
-
-    np.testing.assert_array_equal(header, np.array(
-        ["$N_e^z$", 'Max. error', 'Max. EOC']))
-    np.testing.assert_almost_equal(
-        table[:, 0], discretizations)  # check axial disc
-    np.testing.assert_almost_equal(
-        table[:, 1], np.amax(abs_errors, axis=1))  # check errors
-    np.testing.assert_almost_equal(table[1:, 2], np.ones(
-        len(discretizations)-1) * expected_order)  # check EOC
 
 
 def calculate_convergence_tables_from_files(
@@ -3084,218 +3683,12 @@ def get_compute_times_from_files(
     return times
 
 
-def std_plot(x_axis, y_axis, **kwargs):
-    """adds a line to the current plot.
-
-    Parameters
-    ----------
-    x_axis : array
-        x values (one line per row)
-    y_axis : array
-        y values (one line per row)
-    shape : array size 2
-        shape of plot
-    font_size : float
-        Scale factor of font sozes, e.g. legend, title, ...
-    x_scale : string
-        Scale of x-axis, e.g. 'log'
-
-    Returns
-    -------
-    np.array
-        Compute times per method
-
-    """
-    x_axis = np.array(x_axis)
-    y_axis = np.array(y_axis)
-
-    if 'linewidth' not in kwargs:
-        kwargs['linewidth'] = 3
-    if 'marker' not in kwargs:
-        kwargs['marker'] = 'o'
-    if 'markersize' not in kwargs:
-        kwargs['markersize'] = 12
-
-    if x_axis.ndim == 2:
-        for i in range(0, x_axis.shape[0]):
-            plt.plot(x_axis[i], y_axis[i], **kwargs)
-
-    elif x_axis.ndim == 1:
-        plt.plot(x_axis, y_axis, **kwargs)
-    else:
-        raise ValueError(
-            "Unfeasible dimensionality of input, i.e. ndim = " +
-            str(x_axis.ndim)
-        )
-
-
-def std_plot_prep(benchmark_plot=True, **kwargs):
-    """Create standard plot setting.
-
-    Parameters
-    ----------
-    x_axis : array
-        x values (one line per row)
-    y_axis : array
-        y values (one line per row)
-    shape : array size 2
-        shape of plot
-    font_size : float
-        Scale factor of font sozes, e.g. legend, title, ...
-    x_scale : string
-        Scale of x-axis, e.g. 'log'
-
-    Returns
-    -------
-    np.array
-        Compute times per method
-
-    """
-    if 'title' in kwargs:
-        title = kwargs.pop('title')
-    else:
-        title = None
-    if 'x_label' in kwargs:
-        x_label = kwargs.pop('x_label')
-    else:
-        x_label = None
-    if 'y_label' in kwargs:
-        y_label = kwargs.pop('y_label')
-    else:
-        y_label = None
-    if 'shape' in kwargs:
-        shape = kwargs.pop('shape')
-    elif benchmark_plot:
-        shape = [20, 10]
-    else:
-        shape = [10, 10]
-    if 'font_size_fac' in kwargs:
-        font_size_factor = kwargs.pop('font_size_fac')
-    else:
-        font_size_factor = 1.5
-    if 'x_scale' in kwargs:
-        x_scale = kwargs.pop('x_scale')
-    elif benchmark_plot:
-        x_scale = 'log'
-    if 'y_scale' in kwargs:
-        y_scale = kwargs.pop('y_scale')
-    else:
-        y_scale = 'log'
-    if 'x_lim' in kwargs:
-        x_lim = kwargs['x_lim']
-    else:
-        x_lim = None
-    if 'y_lim' in kwargs:
-        y_lim = kwargs['y_lim']
-    else:
-        y_lim = None
-    # TODO: ignores ticks right now
-    # if 'x_ticks' in kwargs:
-    #     x_ticks = kwargs['x_ticks']
-    # elif x_lim is not None:
-    #     x_ticks = np.logspace(x_lim[0], y_lim[1], num=4, endpoint=True)
-    # if 'y_ticks' in kwargs:
-    #     y_ticks = kwargs['y_ticks']
-    # elif y_lim is not None:
-    #     y_ticks = np.logspace(y_lim[0], y_lim[1], num=12, endpoint=True)
-
-    if 'linewidth' not in kwargs and benchmark_plot:
-        kwargs['linewidth'] = 3
-    if 'marker' not in kwargs:
-        kwargs['marker'] = 'o'
-    if 'markersize' not in kwargs and benchmark_plot:
-        kwargs['markersize'] = 12
-
-    plt.rcParams["figure.figsize"] = (shape[0], shape[1])
-
-    plt.legend(fontsize=15*font_size_factor)
-    plt.grid()
-    if benchmark_plot or 'y_scale' in kwargs:
-        plt.yscale(y_scale)
-    if benchmark_plot or 'x_scale' in kwargs:
-        plt.xscale(x_scale)
-    if x_label is not None:
-        plt.xlabel(x_label, fontsize=15*font_size_factor)
-    if x_label is not None:
-        plt.ylabel(y_label, fontsize=15*font_size_factor)
-    if x_lim is not None:
-        plt.xlim(x_lim[0], x_lim[1])
-        plt.xticks(fontsize=15*font_size_factor)  # todo x_ticks
-    else:
-        plt.xticks(fontsize=15*font_size_factor)
-    if y_lim is not None:
-        plt.ylim(y_lim[0], y_lim[1])
-        plt.yticks(fontsize=15*font_size_factor)  # todo y_ticks
-    else:
-        plt.yticks(fontsize=15*font_size_factor)
-    if title is not None:
-        plt.title(title, fontsize=15*font_size_factor)
-
-def std_latex_table(data_frame, latex_columns, math_mode=True, error_digits=3):
-    """Create latex table from dataframe.
-
-    Parameters
-    ----------
-    data_frame : pandas.dataframe
-        table
-    latex_columns : array
-        column names to be included
-    math_mode : bool
-        print numbers in latex math mode
-    error_digits : int
-        Number of digits for errors.
-
-    Returns
-    -------
-    string
-        Latex table code
-
-    """
-    float_format = '%.' + str(error_digits) + 'e'
-    eoc_format = '{:.2f}'
-    if math_mode:
-        float_format = '$' + float_format + '$'
-        eoc_format = '$' + eoc_format + '$'
-
-    # EOC as fixed point number
-    eoc_columns = data_frame.filter(like='EOC').columns
-
-    data_frame[eoc_columns] = data_frame[eoc_columns].applymap(
-        eoc_format.format)
-
-    data_frame['$N_d$'] = data_frame['$N_d$'].astype(int)
-    data_frame['$N_e^z$'] = data_frame['$N_e^z$'].astype(int)
-    data_frame['$N_e^p$'] = data_frame['$N_e^p$'].astype(int)
-
-    if math_mode:
-        return data_frame.to_latex(index=False,
-                                   float_format=float_format,
-                                   columns=latex_columns,
-                                   escape=False,
-                                   formatters={
-                                       # needed for math mode $$
-                                       '$N_d$': '${:d}$'.format,
-                                       '$N_e^z$': '${:d}$'.format,
-                                       '$N_e^p$': '${:d}$'.format,
-                                   })
-    else:
-        return data_frame.to_latex(index=False,
-                                   float_format=float_format,
-                                   columns=latex_columns,
-                                   escape=False,
-                                   formatters={
-                                       '$N_d$': '{:d}'.format,
-                                       '$N_e^z$': '{:d}'.format,
-                                       '$N_e^p$': '{:d}'.format,
-                                   })
-
-
-def recalculate_results(file_path, models,
-                        ax_methods, ax_cells,
-                        exact_names,
+def recalculate_results(file_path, model,
+                        ax_method, ax_cells,
+                        exact_name,
                         unit='001', which='outlet',
-                        par_methods=[None], par_cells=None,
-                        rad_methods=[None], rad_cells=None,
+                        par_method=None, par_cells=None,
+                        rad_method=None, rad_cells=None,
                         incl_min_val=True,
                         transport_model=None, ncomp=None, nbound=None,
                         save_path_=None,
@@ -3348,255 +3741,313 @@ def recalculate_results(file_path, models,
 
     """
 
-    for modelIdx in range(0, len(models)):
+    extra_keys = {}        
 
-        extra_keys = {}        
+    # needed for DOF calculation
+    if transport_model is None:
+        try:
+            transport_model = re.search(
+                '2DLRM(?!P)|2DLRMP|2DGRM|LRM(?!P)|LRMP|GRM|COL1D|COL2D|MCT|DPFR',
+                model,
+                re.IGNORECASE).group(0)
+        except:
+            raise ValueError(
+                "Considered transport model neither explicitly specified \
+                nor given in model name: " + model)
+    if ncomp is None:
+        try:
+            ncomp = int(re.search(r'(_)(\d+)(comp)',
+                                  model,
+                                  re.IGNORECASE).group(2))
+        except:
+            raise ValueError(
+                "Number of components neither explicitly specified \
+                nor given in model name: " + model)
+    if nbound is None:
+        nbound = ncomp
 
-        # needed for DOF calculation
-        if transport_model is None:
-            try:
-                transport_model = re.search(
-                    '2DLRM(?!P)|2DLRMP|2DGRM|LRM(?!P)|LRMP|GRM',
-                    models[modelIdx],
-                    re.IGNORECASE).group(0)
-            except:
-                raise ValueError(
-                    "Considered transport model neither explicitly specified \
-                    nor given in model name: " + models[modelIdx])
-        if ncomp is None:
-            try:
-                ncomp = int(re.search(r'(_)(\d+)(comp)',
-                                      models[modelIdx],
-                                      re.IGNORECASE).group(2))
-            except:
-                raise ValueError(
-                    "Number of components neither explicitly specified \
-                    nor given in model name: " + models[modelIdx])
-        if nbound is None:
-            nbound = ncomp
-
-        # Data per discretization method
-        abs_errors = []
-        DoFs = []
-        bulk_DoFs = []
-        convergence_tables = []
-        if incl_min_val:
-            min_val = []
-
-        if type(exact_names[modelIdx]) is not str and type(exact_names[modelIdx]) is not None:
-            
-            reference = exact_names[modelIdx]
-            
-        elif which == 'radial_outlet':
-            
-            extra_keys['domain_end'] = sim_go_to(get_simulation(file_path+exact_names[modelIdx]).root,
-                      ['input', 'model', 'unit_'+unit, 'col_radius']
-                      )
-            extra_keys['ref_coords'] = get_radial_coordinates(file_path+exact_names[modelIdx], unit)
-            nRad = len(extra_keys['ref_coords'])
-            reference = []
-            kwargs.update(extra_keys)
-            
-            for rad in range(nRad):
-                reference.append(get_solution(file_path+exact_names[modelIdx], 'unit_'+unit, 'outlet_port_{:03d}'.format(rad), kwargs.get(
-                    'comp', [-1])))
-            reference=np.array(reference)
-        else:
-            
-            reference = get_solution(file_path+exact_names[modelIdx], 'unit_'+unit, which, kwargs.get(
-                'comp', [-1]), **{'sensIdx': kwargs.get('sensIdx', 0)})
-
+    if which == 'bulk':
         if simulation_names is None:
-            simulation_names = []
-            for m in range(0, len(ax_methods)):
+            simulation_names = generate_simulation_names(
+                prefix=file_path + model,
+                ax_methods=[ax_method], ax_cells=ax_cells
+            )
 
-                if len(ax_methods) > 1:
-                    ax_cells_ = ax_cells[m]
-                    par_cells_ = None if par_cells is None else par_cells[m]
-                    rad_cells_ = None if rad_cells is None else rad_cells[m]
-                else:
-                    ax_cells_ = ax_cells
-                    par_cells_ = par_cells
-                    rad_cells_ = rad_cells
+        reference = file_path + exact_name if isinstance(exact_name, str) else exact_name
 
-                if rad_methods[0] is None:
-                    if par_methods[0] is None:
-                        simulation_names.append(
-                            generate_simulation_names(
-                                prefix=file_path+models[modelIdx],
-                                ax_methods=[ax_methods[m]], ax_cells=ax_cells_
-                            )
-                        )
-                    else:
-                        simulation_names.append(
-                            generate_simulation_names(
-                                prefix=file_path+models[modelIdx],
-                                ax_methods=[ax_methods[m]], ax_cells=ax_cells_,
-                                par_methods=[par_methods[m]
-                                             ], par_cells=par_cells_
-                            )
-                        )
-                else:
-                    if par_methods[0] is None:
-                        simulation_names.append(
-                            generate_simulation_names(
-                                prefix=file_path+models[modelIdx],
-                                ax_methods=[ax_methods[m]], ax_cells=ax_cells_,
-                                rad_methods=[rad_methods[m]
-                                             ], rad_cells=rad_cells_
-                            )
-                        )
-                    else:
-                        simulation_names.append(
-                            generate_simulation_names(
-                                prefix=file_path+models[modelIdx],
-                                ax_methods=[ax_methods[m]], ax_cells=ax_cells_,
-                                par_methods=[par_methods[m]
-                                             ], par_cells=par_cells_,
-                                rad_methods=[rad_methods[m]
-                                             ], rad_cells=rad_cells_
-                            )
-                        )
+        poly_deg = abs(ax_method)
+        # The reference is self-describing: read the polynomial degree of its
+        # own representation (0 for FV), so that analytical references, which
+        # are stored as high order DG representations, can be compared against
+        # simulations of any method. Falls back to the simulation's degree,
+        # which is the right choice for a self-convergence reference.
+        ref_method = kwargs.get('ref_method', None)
+        if ref_method is None:
+            ref_method = infer_bulk_poly_deg(
+                reference, unit=unit, default=ax_method
+            )
 
-        nTimePoints = len(get_solution_times(simulation_names[0][0]))
-        
-        error_weight = 1.0/nTimePoints if kwargs.get('time_weighted_error', False) else 1.0
-        
-        for m in range(0, len(ax_methods)):
+        # Exactly one of time_point and normed_coord selects the analysis:
+        # time_point -> spatial error norms at that solution time index;
+        # normed_coord -> temporal error norms at that normalized axial coordinate.
+        time_point = kwargs.get('time_point', None)
+        normed_coord = kwargs.get('normed_coord', None)
+        if (time_point is None) == (normed_coord is None):
+            raise ValueError(
+                "which='bulk' requires exactly one of 'time_point' (spatial "
+                "error norms at that solution time index) or 'normed_coord' "
+                "(temporal error norms at that normalized axial coordinate "
+                "z/L in [0, 1]), got "
+                f"time_point={time_point}, normed_coord={normed_coord}."
+            )
 
-            if len(ax_methods) > 1:
-                ax_cells_ = ax_cells[m]
-                par_cells_ = None if par_cells is None else par_cells[m]
-                rad_cells_ = None if rad_cells is None else rad_cells[m]
-            else:
-                ax_cells_ = ax_cells
-                par_cells_ = par_cells
-                rad_cells_ = rad_cells
-
-            abs_errors.append(
-                calculate_all_abs_errors(
-                    simulation_names[m],
-                    reference,
-                    unit,
-                    which=which,
-                    polyDeg=rad_methods[m], nCells=rad_cells_,
-                    **kwargs
+        if time_point is not None:
+            n_cells_per_disc, linf_errors, l1_errors, l2_errors, min_values, sim_times = (
+                calculate_bulk_convergence_errors(
+                    simulation_names, reference, unit,
+                    ax_method, ref_method, time_point,
+                    quad_points=kwargs.get('quad_points', None)
                 )
             )
-            if incl_min_val:
-                min_val.append(
-                    calculate_all_min_vals(
-                        simulation_names[m],
-                        unit,
-                        which=which
+        else:
+            n_cells_per_disc, linf_errors, l1_errors, l2_errors, min_values, sim_times = (
+                calculate_bulk_slice_convergence_errors(
+                    simulation_names, reference, unit,
+                    ax_method, ref_method,
+                    normed_coord=normed_coord,
+                    interface_mode=kwargs.get('interface_mode', 'average'),
+                    node_tolerance=kwargs.get('node_tolerance', 1e-13)
+                )
+            )
+
+        n_comp = linf_errors.shape[1]
+        tables = {}
+        for comp_idx in range(n_comp):
+            linf_eoc = np.insert(calculate_eoc(n_cells_per_disc, linf_errors[:, comp_idx]), 0, 0.0)
+            l1_eoc = np.insert(calculate_eoc(n_cells_per_disc, l1_errors[:, comp_idx]), 0, 0.0)
+            l2_eoc = np.insert(calculate_eoc(n_cells_per_disc, l2_errors[:, comp_idx]), 0, 0.0)
+
+            tables[comp_idx] = pd.DataFrame({
+                '$N_d$': [poly_deg] * len(n_cells_per_disc),
+                '$N_e^z$': n_cells_per_disc.tolist(),
+                'Max. error': linf_errors[:, comp_idx].tolist(),
+                'Max. EOC': linf_eoc.tolist(),
+                '$L^1$ error': l1_errors[:, comp_idx].tolist(),
+                '$L^1$ EOC': l1_eoc.tolist(),
+                '$L^2$ error': l2_errors[:, comp_idx].tolist(),
+                '$L^2$ EOC': l2_eoc.tolist(),
+                'Sim. time': sim_times.tolist(),
+                'Min. value': min_values[:, comp_idx].tolist(),
+                'Bulk DoF': (n_cells_per_disc * (poly_deg + 1)).tolist(),
+            })
+
+        return tables
+
+    # Data per discretization method
+    abs_errors = []
+    DoFs = []
+    bulk_DoFs = []
+    convergence_tables = []
+    if incl_min_val:
+        min_val = []
+
+    if type(exact_name) is not str and type(exact_name) is not None:
+        
+        reference = exact_name
+        
+    elif which == 'radial_outlet':
+        
+        extra_keys['domain_end'] = sim_go_to(get_simulation(file_path+exact_name).root,
+                  ['input', 'model', 'unit_'+unit, 'col_radius']
+                  )
+        extra_keys['ref_coords'] = get_radial_coordinates(file_path+exact_name, unit)
+        nRad = len(extra_keys['ref_coords'])
+        reference = []
+        kwargs.update(extra_keys)
+        
+        for rad in range(nRad):
+            reference.append(get_solution(file_path+exact_name, 'unit_'+unit, 'outlet_port_{:03d}'.format(rad), kwargs.get(
+                'comp', [-1])))
+        reference=np.array(reference)
+    else:
+        
+        reference = get_solution(file_path+exact_name, 'unit_'+unit, which, kwargs.get(
+            'comp', [-1]), **{'sensIdx': kwargs.get('sensIdx', 0)})
+
+    if simulation_names is None:
+        
+        simulation_names = []
+
+        if rad_method is None:
+            if par_method is None:
+                simulation_names.append(
+                    generate_simulation_names(
+                        prefix=file_path+model,
+                        ax_methods=[ax_method], ax_cells=ax_cells
                     )
                 )
-            if par_methods[0] is None and rad_methods[0] is None:
-                DoFs.append(
-                    calculate_DOFs(ax_cells_,
-                                   ax_methods[m],
-                                   full_DOFs=True,
-                                   model=transport_model,
-                                   nComp=ncomp, nBound=nbound)
-                )
-                bulk_DoFs.append(
-                    calculate_DOFs(ax_cells_,
-                                   ax_methods[m],
-                                   full_DOFs=False,
-                                   model=transport_model,
-                                   nComp=ncomp, nBound=nbound)
-                )
-                # Convergence Table
-                header, table = convergency_table(ax_methods[m],
-                                                  ax_cells_,
-                                                  abs_errors[m],
-                                                  delta=error_weight,
-                                                  error_types=kwargs.get('error_types', ['max', 'L1', 'L2']),
-                                                  sim_names=simulation_names[m])
-
             else:
-                
-                aux_methods = [ax_methods[m]]
-                aux_cells = [ax_cells_]
-                
-                if rad_methods[0] is not None:
-                    aux_methods.append(rad_methods[m])
-                    aux_cells.append(rad_cells_)
-                
-                if par_methods[0] is not None:
-                    aux_methods.append(par_methods[m])
-                    aux_cells.append(par_cells_)
-                
-                DoFs.append(
-                    calculate_DOFs(aux_cells,
-                                   aux_methods,
-                                   full_DOFs=True,
-                                   model=transport_model,
-                                   nComp=ncomp, nBound=nbound)
+                simulation_names.append(
+                    generate_simulation_names(
+                        prefix=file_path+model,
+                        ax_methods=[ax_method], ax_cells=ax_cells,
+                        par_methods=[par_method], par_cells=par_cells
+                    )
                 )
-                bulk_DoFs.append(
-                    calculate_DOFs(aux_cells,
-                                   aux_methods,
-                                   full_DOFs=False,
-                                   model=transport_model,
-                                   nComp=ncomp, nBound=nbound)
+        else:
+            if par_method is None:
+                simulation_names.append(
+                    generate_simulation_names(
+                        prefix=file_path+model,
+                        ax_methods=[ax_method], ax_cells=ax_cells,
+                        rad_methods=[rad_method], rad_cells=rad_cells
+                    )
                 )
-                # Convergence Table
-                header, table = convergency_table(
-                    aux_methods,
-                    aux_cells,
-                    abs_errors[m],
-                    delta=error_weight,
-                    error_types=kwargs.get('error_types', ['max', 'L1', 'L2']),
-                    sim_names=simulation_names[m],
-                    full_DOFs=False,
-                    transport_model=transport_model
-                )
-
-            if incl_min_val:
-                table = np.column_stack((np.array(table), min_val[m]))
-                header.append('Min. value')
-
-            convergence_tables.append(table)
-
-            # Export Data
-            if save_names == None:
-                if ax_methods[m] == 0:
-                    save_name = models[modelIdx] + "_FV"
-                elif ax_methods[m] < 0:
-                    save_name = models[modelIdx] + \
-                        "_DGexInt_P" + str(abs(ax_methods[m]))
-                else:
-                    save_name = models[modelIdx] + \
-                        "_DG_P" + str(abs(ax_methods[m]))
-                if par_methods[0] is not None:
-                    if par_methods[m] < 0:
-                        save_name += "_cDG_parP" + str(abs(par_methods[m]))
-                    elif abs(par_methods[m]) != abs(ax_methods[m]):
-                        save_name += "parP" + str(abs(par_methods[m]))
             else:
-                save_name = save_names[m]
+                simulation_names.append(
+                    generate_simulation_names(
+                        prefix=file_path+model,
+                        ax_methods=[ax_method], ax_cells=ax_cells,
+                        par_methods=[par_method], par_cells=par_cells,
+                        rad_methods=[rad_method], rad_cells=rad_cells
+                    )
+                )
 
-            # add (bulk) DoFs to output table
-            header = np.insert(header, len(header), 'DoF')
-            result = np.hstack(
-                (convergence_tables[m], np.atleast_2d(DoFs[m]).T))
-            header = np.insert(header, len(header), 'Bulk DoF')
-            result = np.hstack(
-                (result, np.atleast_2d(bulk_DoFs[m]).T))
+    nTimePoints = len(get_solution_times(simulation_names[0]))
+    
+    error_weight = 1.0/nTimePoints if kwargs.get('time_weighted_error', False) else 1.0
+    
+    abs_errors = calculate_all_abs_errors(
+        simulation_names,
+        reference,
+        unit,
+        which=which,
+        polyDeg=rad_method, nCells=rad_cells,
+        **kwargs
+        )
+    if incl_min_val:
+        min_val = calculate_all_min_vals(
+            simulation_names,
+            unit,
+            which=which
+            )
+    if par_method is None and rad_method is None:
+        DoFs = calculate_DOFs(ax_cells,
+            ax_method,
+            full_DOFs=True,
+            model=transport_model,
+            nComp=ncomp, nBound=nbound
+            )
+        bulk_DoFs = calculate_DOFs(ax_cells,
+            ax_method,
+            full_DOFs=False,
+            model=transport_model,
+            nComp=ncomp, nBound=nbound
+            )
+        # Convergence Table
+        header, table = convergency_table(
+            ax_method, ax_cells,
+            abs_errors,
+            delta=error_weight,
+            error_types=kwargs.get('error_types', ['max', 'L1', 'L2']),
+            sim_names=simulation_names
+            )
 
-            # add method to output table
-            header = np.insert(header, 0, '$N_d$')
-            arr = np.empty(len(ax_cells_), dtype=object)
-            arr[:] = str(int(abs(ax_methods[m])))
-            result = np.column_stack((arr, result))
+    else:
+        
+        aux_methods = [ax_method]
+        aux_cells = [ax_cells]
+        
+        if rad_method is not None:
+            aux_methods.append(rad_method)
+            aux_cells.append(rad_cells)
+        
+        if par_method is not None:
+            aux_methods.append(par_method)
+            aux_cells.append(par_cells)
+        
+        DoFs.append(
+            calculate_DOFs(aux_cells,
+                           aux_methods,
+                           full_DOFs=True,
+                           model=transport_model,
+                           nComp=ncomp, nBound=nbound)
+        )
+        bulk_DoFs.append(
+            calculate_DOFs(aux_cells,
+                           aux_methods,
+                           full_DOFs=False,
+                           model=transport_model,
+                           nComp=ncomp, nBound=nbound)
+        )
+        # Convergence Table
+        header, table = convergency_table(
+            aux_methods,
+            aux_cells,
+            abs_errors,
+            delta=error_weight,
+            error_types=kwargs.get('error_types', ['max', 'L1', 'L2']),
+            sim_names=simulation_names,
+            full_DOFs=False,
+            transport_model=transport_model
+        )
 
-            # export
-            if export_results:
-                if save_path_ is None:
-                    save_path_ = file_path
-                pd.DataFrame(result, columns=header).to_csv(
-                    save_path_ + save_name + ".csv", index=False)
+    if incl_min_val:
+        table = np.column_stack((np.array(table), min_val))
+        header.append('Min. value')
+
+    convergence_tables = table
+
+    # Export Data
+    if save_names == None:
+        
+        refinement_ID = kwargs['refinement_ID']
+        
+        disc = sim_go_to(get_simulation(simulation_names[0]).root,
+                              ['input',
+                               'model',
+                               f'unit_{refinement_ID}',
+                               'discretization'
+                               ]
+                )
+        
+        save_name = model + generate_bulkDisc_name(disc)
+            
+        if par_method is not None:
+            
+            disc = sim_go_to(get_simulation(simulation_names[0]).root,
+                                  ['input',
+                                   'model',
+                                   f'unit_{refinement_ID}',
+                                   'particle_type_000',
+                                   'discretization'
+                                   ]
+                    )
+            
+            save_name = save_name + generate_parDisc_name(disc, generate_bulkDisc_name(disc))
+    else:
+        save_name = save_names
+
+    # add (bulk) DoFs to output table
+    header = np.insert(header, len(header), 'DoF')
+    result = np.hstack(
+        (convergence_tables, np.atleast_2d(DoFs).T))
+    header = np.insert(header, len(header), 'Bulk DoF')
+    result = np.hstack(
+        (result, np.atleast_2d(bulk_DoFs).T))
+
+    # add method to output table
+    header = np.insert(header, 0, '$N_d$')
+    arr = np.empty(len(ax_cells), dtype=object)
+    arr[:] = str(int(abs(ax_method)))
+    result = np.column_stack((arr, result))
+
+    # export
+    if export_results:
+        if save_path_ is None:
+            save_path_ = file_path
+        pd.DataFrame(result, columns=header).to_csv(
+            save_path_ + save_name + ".csv", index=False)
 
     return pd.DataFrame(result, columns=header)
 
@@ -3713,8 +4164,9 @@ def mult_sim_rerun(file_path, cadet_path, n_wdh):
     n_wdh : int
         Number of reruns per simulation
     """
-    Cadet.cadet_path = cadet_path
     model = Cadet()
+    model.install_path = cadet_path
+    
     files = os.listdir(file_path)
 
     for file in files:  # file = files[0]
@@ -3739,7 +4191,7 @@ def mult_sim_rerun(file_path, cadet_path, n_wdh):
                 # only keep faster simulation time
                 best_sim_time = min(best_sim_time, model.root.meta.time_sim)
 
-            model.load()
+            model.load_from_file()
             model.root.meta.time_sim = best_sim_time
             model.save()
             print(file + " rerun")
@@ -3787,14 +4239,3 @@ def delete_h5_files(directory, exclude_files=None):
         print("No .h5 files deleted in the {directory} directory.")
     else:
         print(f"Deleted {deleted_files} .h5 file(s) in the {directory} directory.")
-
-
-if __name__ == '__main__':
-
-    test_eoc()
-    test_calculate_DOFs()
-    test_convergency_table()
-    test_get_unique_DGsolution()
-    test_map_z_to_xi()
-    test_get_interpolated_DGsolution()
-    test_Gauss_and_Lobatto_nodes()
