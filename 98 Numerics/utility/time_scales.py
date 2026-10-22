@@ -37,7 +37,7 @@ def _axial_node_spacing(discretization, bed_length):
     return bed_length / int(discretization['NCOL'])
 
 
-def characteristic_rates(column, feed_concentration=None):
+def characteristic_rates(column, velocity, feed_concentration=None):
     """Estimate the characteristic rate of every process in a column model.
 
     Parameters
@@ -45,6 +45,10 @@ def characteristic_rates(column, feed_concentration=None):
     column : dict-like
         The unit operation configuration, i.e. `model.root.input.model.unit_XXX`
         of a COLUMN_MODEL_1D.
+    velocity : float
+        Interstitial velocity in m/s. It is not stored in the unit operation,
+        which only holds the flow rate and the geometry, so it has to be passed
+        in. Getting it wrong moves every convection and dispersion rate.
     feed_concentration : float
         Representative liquid concentration, used for the adsorption rate, which
         is concentration dependent. Defaults to 1.
@@ -63,9 +67,7 @@ def characteristic_rates(column, feed_concentration=None):
     cross_section = float(column.get('cross_section_area',
                                      column.get('inlet_cross_section_area', 1.0)))
 
-    # Interstitial velocity from the flow rate is not available here, so fall
-    # back on the velocity the settings are built with.
-    velocity = float(column.get('velocity', 0.01))
+    velocity = float(velocity)
 
     node_spacing = _axial_node_spacing(column['discretization'], bed_length)
 
@@ -111,8 +113,12 @@ def characteristic_rates(column, feed_concentration=None):
             radius = float(particle['par_radius'])
             # Rate seen by the bulk liquid: specific surface times the
             # mass transfer coefficient.
+            # The film term in the bulk equation carries the phase ratio of the
+            # BED, not of the total porosity.
+            bed_porosity = float(column.get('col_porosity', total_porosity))
             rows.append(('film mass transfer',
-                         3.0 * film / radius * (1.0 - total_porosity) / total_porosity,
+                         3.0 * film / radius
+                         * (1.0 - bed_porosity) / bed_porosity,
                          'physics'))
 
         if int(particle.get('has_pore_diffusion', 0)):
