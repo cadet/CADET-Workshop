@@ -141,6 +141,12 @@ def get_model(n_elements=100, kinetics_factor=1.0, is_kinetic=True, **kwargs):
     loading = kwargs.get('loading', LOADING)
     end_time = kwargs.get('end_time', END_TIME)
 
+    # The elution can be split into sections that change nothing at all. The
+    # inlet is identical on either side of such a boundary, so what they cost
+    # is the re-initialization and the order restart, with no discontinuity to
+    # resolve on top.
+    n_sections = int(kwargs.get('n_sections', 1))
+
     cross_section = np.pi * COLUMN_RADIUS ** 2
 
     model = Dict()
@@ -207,13 +213,15 @@ def get_model(n_elements=100, kinetics_factor=1.0, is_kinetic=True, **kwargs):
     model.input.solver.consistent_init_mode = 1
     model.input.solver.consistent_init_mode_sens = 3
     model.input.solver.nthreads = 1
-    model.input.solver.sections.nsec = 2
-    model.input.solver.sections.section_continuity = [0]
-    model.input.solver.sections.section_times = [0.0, INJECTION_TIME, end_time]
+    elution = np.linspace(INJECTION_TIME, end_time, n_sections + 1)
+    model.input.solver.sections.nsec = 1 + n_sections
+    model.input.solver.sections.section_continuity = [0] * n_sections
+    model.input.solver.sections.section_times = [0.0] + elution.tolist()
     model.input.solver.time_integrator.ABSTOL = kwargs.get('idas_abstol', 1e-10)
     model.input.solver.time_integrator.ALGTOL = kwargs.get('idas_algtol', 1e-8)
     model.input.solver.time_integrator.RELTOL = kwargs.get('idas_reltol', 1e-8)
-    model.input.solver.time_integrator.INIT_STEP_SIZE = 1e-10
+    model.input.solver.time_integrator.INIT_STEP_SIZE = kwargs.get(
+        'init_step_size', 1e-10)
     model.input.solver.time_integrator.MAX_STEPS = 1000000
     model.input.solver.user_solution_times = np.linspace(
         0.0, end_time, int(end_time) + 1)
@@ -225,10 +233,12 @@ def get_model(n_elements=100, kinetics_factor=1.0, is_kinetic=True, **kwargs):
     model.input.model.unit_000.sec_000.lin_coeff = [0.0] * n_comp
     model.input.model.unit_000.sec_000.quad_coeff = [0.0] * n_comp
     model.input.model.unit_000.sec_000.cube_coeff = [0.0] * n_comp
-    model.input.model.unit_000.sec_001.const_coeff = [0.0] * n_comp
-    model.input.model.unit_000.sec_001.lin_coeff = [0.0] * n_comp
-    model.input.model.unit_000.sec_001.quad_coeff = [0.0] * n_comp
-    model.input.model.unit_000.sec_001.cube_coeff = [0.0] * n_comp
+    for index in range(1, n_sections + 1):
+        section = model.input.model.unit_000[f'sec_{index:03d}']
+        section.const_coeff = [0.0] * n_comp
+        section.lin_coeff = [0.0] * n_comp
+        section.quad_coeff = [0.0] * n_comp
+        section.cube_coeff = [0.0] * n_comp
 
     model.input.model.unit_002.UNIT_TYPE = 'OUTLET'
     model.input.model.unit_002.ncomp = n_comp

@@ -127,6 +127,14 @@ def characteristic_rates(column, velocity, feed_concentration=None):
             rows.append(('pore diffusion, whole particle',
                          pore / radius**2, 'physics'))
 
+            # The particle carries a grid of its own, and like the axial one it
+            # manufactures a faster process the finer it gets.
+            cells = particle.get('discretization', {}).get('NCELLS', None)
+            if cells:
+                spacing = radius / int(cells)
+                rows.append(('pore diffusion, one particle cell',
+                             pore / spacing**2, 'discretization'))
+
     table = pd.DataFrame(rows, columns=['process', 'rate / s^-1', 'set by'])
     table['time scale / s'] = 1.0 / table['rate / s^-1']
 
