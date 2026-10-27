@@ -84,6 +84,16 @@ def get_model(transport_model='LRMP', **kwargs):
     idas_abstol, idas_reltol, idas_algtol : float
         Integrator tolerances. The reported case runs ALGTOL six decades
         tighter than ABSTOL, which is one of the things worth varying.
+    gs_type, max_krylov, max_restarts, schur_safety : int, int, int, float
+        The four settings of the GMRES that the arrow head solver uses on the
+        Schur complement, see /input/model/unit_XXX/discretization. Defaults
+        are 1 (modified Gram-Schmidt), 0 (Krylov space may grow to the full
+        Schur complement), 10 and 1e-8.
+    arrow_head : bool
+        Whether to use the block structured (arrow head) solver, which is what
+        CADET defaults to for an FV bulk with FV particles. False routes the
+        same model through ColumnModel1D's global direct sparse solver, which
+        has no GMRES and hence none of these four settings.
 
     Returns
     -------
@@ -122,7 +132,7 @@ def get_model(transport_model='LRMP', **kwargs):
     column.discretization.weno.BOUNDARY_MODEL = 0
     column.discretization.weno.WENO_EPS = 1e-10
     column.discretization.weno.WENO_ORDER = int(kwargs.get('weno_order', 2))
-    column.discretization.GS_TYPE = 1
+    column.discretization.GS_TYPE = int(kwargs.get('gs_type', 1))
     column.discretization.MAX_KRYLOV = int(kwargs.get('max_krylov', 0))
     column.discretization.MAX_RESTARTS = int(kwargs.get('max_restarts', 10))
     column.discretization.SCHUR_SAFETY = kwargs.get('schur_safety', 1.0e-8)

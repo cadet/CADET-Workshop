@@ -15,7 +15,17 @@ system.
 import matplotlib.pyplot as plt
 import numpy as np
 
+from utility.column_animation import convection_rate, film_rate
 from utility.stiffness_metrics import COLORS, style_axis
+
+# The two time scales used throughout this script are not invented. They
+# are what one axial cell of the column in `utility/column_animation.py`
+# actually does: material is convected across a cell at about 1.2 / s,
+# while the film transfer into the particles sitting in that cell runs at
+# about 1135 / s. So the 2x2 system below is not a textbook analogue of a
+# chromatography model, it is one node of one.
+COLUMN_SLOW = -convection_rate()
+COLUMN_FAST = -film_rate()
 
 # Darker than the grid, so that the real and imaginary axis read as axes.
 _AXIS_COLOR = '#707070'
@@ -47,7 +57,7 @@ def _latex_float(value, digits=1):
     return rf"{mantissa:.{digits}f} \cdot 10^{{{exponent}}}"
 
 
-def two_scale_system(slow=-1.0, fast=-1000.0):
+def two_scale_system(slow=COLUMN_SLOW, fast=COLUMN_FAST):
     """Build a 2x2 linear system with two prescribed time scales.
 
     The system is symmetric with eigenvectors (1, 1) and (1, -1), so that both
@@ -70,7 +80,7 @@ def two_scale_system(slow=-1.0, fast=-1000.0):
                            [slow - fast, slow + fast]])
 
 
-def two_scale_solution(time, slow=-1.0, fast=-1000.0):
+def two_scale_solution(time, slow=COLUMN_SLOW, fast=COLUMN_FAST):
     """Analytical solution of two_scale_system() for y(0) = (1, 0).
 
     Parameters
@@ -346,7 +356,7 @@ def plot_accuracy_and_blowup(implicit_run, explicit_run, t_end=2.0,
     label, time, solution = explicit_run
     magnitude = np.abs(solution[:, 0])
     step_size = time[1] - time[0] if time.size > 1 else np.nan
-    growth = abs(1.0 + step_size * eigenvalues.get('fast', -1000.0))
+    growth = abs(1.0 + step_size * eigenvalues.get('fast', COLUMN_FAST))
 
     axes[1].plot(
         time, np.abs(two_scale_solution(time, **eigenvalues)[:, 0]),
@@ -770,7 +780,7 @@ def plot_bdf_stability_regions(orders=(1, 2, 3, 4, 5), figsize=(13.5, 3.3)):
 TIME_STEPS = (0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001)
 
 
-def make_time_step_explorer(slow=-1.0, fast=-1000.0, t_end=5.0,
+def make_time_step_explorer(slow=COLUMN_SLOW, fast=COLUMN_FAST, t_end=5.0,
                             time_steps=TIME_STEPS, bound=1.0e8,
                             figsize=(11.0, 4.2)):
     """One knob, the time step, applied to both methods at once.
@@ -788,8 +798,8 @@ def make_time_step_explorer(slow=-1.0, fast=-1000.0, t_end=5.0,
         implicit    1 / |1 - h * lambda_fast|    always below one
 
     The explicit method is stable exactly while its factor stays below one,
-    i.e. for h < 2 / |lambda_fast|, which is 2 ms here. The implicit method has
-    no such limit, which is the whole point.
+    i.e. for h < 2 / |lambda_fast|, which is 1.76 ms for the column's film
+    rate. The implicit method has no such limit, which is the whole point.
 
     Parameters
     ----------
