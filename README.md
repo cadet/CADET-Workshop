@@ -49,9 +49,9 @@ Chapters contain numbered topics. A lesson and its exercises share the same topi
 
 ```text
 02 CADET Fundamentals/
-  02.3 Inlet Profiles/
-    02.3a_inlet_profiles_lesson.md
-    02.3b_inlet_profiles_exercises.md
+  02.3 Inlet Profiles and Events/
+    02.3a_inlet_profiles_and_events_lesson.md
+    02.3b_inlet_profiles_and_events_exercises.md
 ```
 
 **01 Introduction** contains the workshop orientation (01.1), the CADET tools (01.2), the documentation and model catalogs (01.3), how to ask questions, report problems and contribute (01.4) and a glossary of the terms used in the workshop (01.5).
