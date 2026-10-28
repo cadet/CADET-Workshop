@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="560" viewBox="0 0 760 560" font-family="sans-serif">
+<rect width="760" height="560" fill="white"/>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1f2937"/></marker></defs>
+<rect x="200" y="110" width="360" height="320" fill="none" stroke="#1f2937" stroke-width="2.5"/>
+<line x1="221.6" y1="110" x2="279.2" y2="110" stroke="#1f2937" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="480.8" y1="110" x2="538.4" y2="110" stroke="#1f2937" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="560" y1="129.2" x2="560" y2="180.4" stroke="#1f2937" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="560" y1="359.6" x2="560" y2="410.8" stroke="#1f2937" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="538.4" y1="430" x2="480.8" y2="430" stroke="#1f2937" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="279.2" y1="430" x2="221.6" y2="430" stroke="#1f2937" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="200" y1="410.8" x2="200" y2="359.6" stroke="#1f2937" stroke-width="2.5" marker-end="url(#arrow)"/>
+<line x1="200" y1="180.4" x2="200" y2="129.2" stroke="#1f2937" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="305" y="87" width="150" height="46" rx="6" fill="#005b82"/>
+<text x="380" y="110" font-size="17" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="central">Zone I</text>
+<text x="380" y="76" font-size="14" font-weight="normal" fill="#5b6370" text-anchor="middle" dominant-baseline="central">desorbs B</text>
+<rect x="537" y="195" width="46" height="150" rx="6" fill="#005b82"/>
+<g transform="rotate(-90 560 270)"><text x="560" y="270" font-size="17" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="central">Zone II</text></g>
+<text x="594" y="270" font-size="14" font-weight="normal" fill="#5b6370" text-anchor="start" dominant-baseline="central">desorbs A</text>
+<rect x="305" y="407" width="150" height="46" rx="6" fill="#005b82"/>
+<text x="380" y="430" font-size="17" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="central">Zone III</text>
+<text x="380" y="476" font-size="14" font-weight="normal" fill="#5b6370" text-anchor="middle" dominant-baseline="central">adsorbs B</text>
+<rect x="177" y="195" width="46" height="150" rx="6" fill="#005b82"/>
+<g transform="rotate(-90 200 270)"><text x="200" y="270" font-size="17" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="central">Zone IV</text></g>
+<text x="166" y="270" font-size="14" font-weight="normal" fill="#5b6370" text-anchor="end" dominant-baseline="central">adsorbs A</text>
+<line x1="130" y1="40" x2="200" y2="110" stroke="#1f2937" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="122" y="13" font-size="16" font-weight="bold" fill="#1f2937" text-anchor="end" dominant-baseline="central">Eluent</text>
+<text x="122" y="31" font-size="13" font-weight="normal" fill="#5b6370" text-anchor="end" dominant-baseline="central">fresh buffer</text>
+<line x1="560" y1="110" x2="630" y2="40" stroke="#1f2937" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="638" y="13" font-size="16" font-weight="bold" fill="#1f2937" text-anchor="start" dominant-baseline="central">Extract</text>
+<text x="638" y="31" font-size="13" font-weight="normal" fill="#5b6370" text-anchor="start" dominant-baseline="central">strongly binding B</text>
+<line x1="630" y1="500" x2="560" y2="430" stroke="#1f2937" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="638" y="509" font-size="16" font-weight="bold" fill="#1f2937" text-anchor="start" dominant-baseline="central">Feed</text>
+<text x="638" y="527" font-size="13" font-weight="normal" fill="#5b6370" text-anchor="start" dominant-baseline="central">A + B</text>
+<line x1="200" y1="430" x2="130" y2="500" stroke="#1f2937" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="122" y="509" font-size="16" font-weight="bold" fill="#1f2937" text-anchor="end" dominant-baseline="central">Raffinate</text>
+<text x="122" y="527" font-size="13" font-weight="normal" fill="#5b6370" text-anchor="end" dominant-baseline="central">weakly binding A</text>
+<text x="380" y="236" font-size="14" font-weight="normal" fill="#5b6370" text-anchor="middle" dominant-baseline="central">liquid flows clockwise:</text>
+<text x="380" y="256" font-size="15" font-weight="bold" fill="#1f2937" text-anchor="middle" dominant-baseline="central">I → II → III → IV</text>
+<text x="380" y="288" font-size="14" font-weight="normal" fill="#5b6370" text-anchor="middle" dominant-baseline="central">at each switch, every column</text>
+<text x="380" y="308" font-size="15" font-weight="bold" fill="#1f2937" text-anchor="middle" dominant-baseline="central">moves one zone back: I → IV</text>
+</svg>
