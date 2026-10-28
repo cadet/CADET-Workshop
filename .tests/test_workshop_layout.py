@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from collections import defaultdict
 from pathlib import Path
+from urllib.parse import unquote
 
 import jupytext
 
@@ -103,6 +104,22 @@ class TestWorkshopLayout(unittest.TestCase):
                     elif not fenced:
                         self.assertIsNone(re.match(r"^#{2,6}\s+\d+(?:\.\d+)*[.)]\s+", line))
                 self.assertEqual(titles, [expected])
+
+    def test_local_links_point_to_files(self):
+        # JupyterLab opens links as files: a link to a folder fails with an error.
+        link = re.compile(r"\]\(([^)\s]+)\)")
+        for path in lesson_files(REPO_ROOT):
+            for cell in jupytext.read(path).cells:
+                if cell.cell_type != "markdown":
+                    continue
+                # Code in fenced blocks or backticks is not a link.
+                text = re.sub(r"```.*?```|`[^`\n]*`", "", cell.source, flags=re.S)
+                for target in link.findall(text):
+                    if re.match(r"^(\w+:|#)", target):
+                        continue
+                    with self.subTest(path=path.relative_to(REPO_ROOT), link=target):
+                        resolved = path.parent / unquote(target.split("#", 1)[0])
+                        self.assertTrue(resolved.is_file(), resolved)
 
     def test_notebook_checkpoints_are_not_lessons(self):
         with tempfile.TemporaryDirectory() as directory:

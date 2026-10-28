@@ -1,3 +1,4 @@
+import re
 import shlex
 import json
 import sys
@@ -5,6 +6,7 @@ import os
 import shutil
 import unittest
 from pathlib import Path
+from urllib.parse import unquote
 
 from git import Repo
 import jupytext
@@ -88,6 +90,12 @@ class Test_Workshop_Tools(unittest.TestCase):
                     self.assertEqual(cell["cell_type"], cell_type, notebook)
                     self.assertEqual(cell.get("metadata", {}).get("tags", []), tags, notebook)
                     expected_source = placeholder if punched and "solution" in tags else source
+                    if cell_type == "markdown":
+                        expected_source = process_repo.notebook_links(source)
+                        # Links to lessons and exercises reach the generated notebooks.
+                        for target in re.findall(r"\]\(([^)\s#]+\.(?:md|ipynb))(?:#[^)\s]*)?\)", expected_source):
+                            if not re.match(r"^\w+:", target):
+                                self.assertTrue((notebook.parent / unquote(target)).is_file(), (notebook, target))
                     self.assertEqual("".join(cell["source"]), expected_source, notebook)
                 sources = solution_sources(notebook)
                 if not sources:

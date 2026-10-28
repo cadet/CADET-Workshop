@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import re
 import shutil
 from abc import abstractmethod
 from pathlib import Path
@@ -263,6 +264,18 @@ def run_func_over_args_list(func, args_list, backend=None, n_cores=1):
 
 # --------------- domain specific helpers ---------------
 
+# A relative link to a lesson or exercises source, e.g. ](../02.2%20Model%20Templates/02.2a_model_templates_lesson.md)
+LESSON_LINK = re.compile(r"\]\((?!\w+:)([^)\s]*?\d{2}\.\d+[ab]_[a-z0-9_]+_(?:lesson|exercises))\.md(#[^)\s]*)?\)")
+
+
+def notebook_links(text):
+    """Point links to lesson and exercises sources at the generated notebooks.
+
+    Lessons link to each other's ``.md`` sources, which open in JupyterLab through jupytext on the
+    source branch. On the generated branches, only the ``.ipynb`` files exist.
+    """
+    return LESSON_LINK.sub(lambda m: f"]({m.group(1)}.ipynb{m.group(2) or ''})", text)
+
 def convert_myst_to_ipynb(myst_file_path):
     """Convert a MyST markdown file to a Jupyter notebook using jupytext.
 
@@ -281,6 +294,10 @@ def convert_myst_to_ipynb(myst_file_path):
     notebook_path = Path(myst_file_path).with_suffix(".ipynb")
     notebook = json.loads(notebook_path.read_text())
     notebook.setdefault("metadata", {}).setdefault("jupytext", {})["formats"] = "ipynb"
+    for cell in notebook.get("cells", []):
+        if cell.get("cell_type") == "markdown":
+            source = "".join(cell["source"]) if isinstance(cell["source"], list) else cell["source"]
+            cell["source"] = notebook_links(source)
     notebook_path.write_text(json.dumps(notebook, indent=1, ensure_ascii=False) + "\n")
     return result
 
