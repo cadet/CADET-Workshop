@@ -33,10 +33,11 @@ import pandas as pd
 import utility.setting_lrm_vs_lrmp as case
 from utility.stiffness_metrics import COLORS, style_axis
 
-DATA = os.path.join('data', 'gmres')
+DATA = os.path.join('data', 'user_stories',
+                    'Cost case study - LRMP vs LRM')
 RUNS_CSV = os.path.join(DATA, 'runs.csv')
 CURVES_CSV = os.path.join(DATA, 'chromatograms.csv')
-WORK = os.path.join('sweeps', 'gmres')
+WORK = os.path.join(DATA, 'sweeps', 'gmres')
 
 # Machine epsilon in double precision. A residual norm cannot be reduced much
 # below this fraction of the norm of the terms that cancel in it, no matter how

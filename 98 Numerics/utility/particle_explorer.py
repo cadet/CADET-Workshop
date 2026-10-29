@@ -96,6 +96,7 @@ def make_study():
     """Assemble the Study for this case."""
     study = Study(
         name='particle',
+        notebook='stiffness/Stiffness 4 - The particle',
         build=_build,
         options={
             'pore_diffusion': study_tools.value_options(PORE_DIFFUSIONS, '{:.0e}'),

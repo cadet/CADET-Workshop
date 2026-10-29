@@ -91,6 +91,9 @@ class Study:
     outlet_unit : string
         Which unit operation's outlet is recorded and plotted. Flowsheets with
         more than one unit need to say which signal is the chromatogram.
+    notebook : string
+        Folder of the notebook this study belongs to, relative to
+        `data/`. Decides where its simulation files are kept.
     defaults : dict
         Starting slider position per knob. Defaults to the value closest to
         one on a logarithmic scale, or the first option.
@@ -107,13 +110,19 @@ class Study:
     component_names: Sequence[str] = field(default_factory=tuple)
     describe: Optional[Callable[..., dict]] = None
     knob_name: str = 'value'
+    notebook: str = ''
     outlet_unit: str = 'unit_001'
     defaults: Optional[dict] = None
 
     @property
     def work_directory(self):
-        """Where this study keeps its simulation files."""
-        return os.path.join('sweeps', self.name)
+        """Where this study keeps its simulation files.
+
+        Under the folder of the notebook that shows the study, so
+        that everything one notebook owns sits in one place.
+        """
+        return os.path.join('data', self.notebook, 'sweeps',
+                            self.name)
 
     @property
     def knob_options(self):

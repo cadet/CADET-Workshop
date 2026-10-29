@@ -72,8 +72,10 @@ def get_model(
         column_geometry='AXIAL_FLOW_CYLINDER',
         **kwargs):
     
-    axNElem = 8 * kwargs.get('axRefinement', refinement)
-    parNElem = kwargs.get('parZ', 1)
+    # The axial resolution is either given directly as a number of cells /
+    # elements, or as a refinement factor on the base resolution of 8.
+    axNElem = int(kwargs.get('axNElem', 8 * kwargs.get('axRefinement', refinement)))
+    parNElem = int(kwargs.get('parZ', 1))
     
     model = Dict()
     
@@ -189,11 +191,16 @@ def get_model(
     model.input.solver.sections.nsec = 3
     model.input.solver.sections.section_continuity = [ 0, 0 ]
     model.input.solver.sections.section_times = [ 0.0, 10.0, 90.0, 1500.0]
-    model.input.solver.time_integrator.ABSTOL = kwargs.get('idas_reftol', 1e-12)
-    model.input.solver.time_integrator.ALGTOL = kwargs['idas_reftol'] * 100 if 'idas_reftol' in kwargs else 1e-10
+    # Tolerances: idas_abstol / idas_reltol / idas_algtol are the preferred
+    # names. idas_reftol is kept as an alias for the absolute tolerance so that
+    # older calls keep working. Unless given explicitly, the relative and
+    # algebraic tolerances follow the absolute one by two orders of magnitude.
+    abstol = kwargs.get('idas_abstol', kwargs.get('idas_reftol', 1e-12))
+    model.input.solver.time_integrator.ABSTOL = abstol
+    model.input.solver.time_integrator.ALGTOL = kwargs.get('idas_algtol', abstol * 100)
     model.input.solver.time_integrator.INIT_STEP_SIZE = 1e-10
     model.input.solver.time_integrator.MAX_STEPS = 1000000
-    model.input.solver.time_integrator.RELTOL = kwargs['idas_reftol'] * 100 if 'idas_reftol' in kwargs else 1e-10
+    model.input.solver.time_integrator.RELTOL = kwargs.get('idas_reltol', abstol * 100)
     
     # Return data
     model.input.solver.user_solution_times = np.linspace(0, 1500, 1501)

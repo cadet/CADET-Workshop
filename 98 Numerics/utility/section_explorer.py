@@ -84,6 +84,7 @@ def make_study():
     """Assemble the Study for this case."""
     study = Study(
         name='sections',
+        notebook='stiffness/Stiffness 6 - Section transitions',
         build=_build,
         options={
             'n_sections': study_tools.value_options(SECTION_COUNTS, '{:d}'),

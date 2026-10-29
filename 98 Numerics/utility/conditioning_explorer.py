@@ -61,6 +61,7 @@ def make_study():
     """Assemble the Study for this case."""
     return Study(
         name='conditioning',
+        notebook='stiffness/Stiffness 10 - Conditioning',
         build=_build,
         options={
             'nu': study_tools.value_options(CHARGES, '{:g}'),
