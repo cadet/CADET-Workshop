@@ -103,6 +103,7 @@ def make_study():
     """Assemble the Study for this case."""
     study = Study(
         name='particle_model',
+        notebook='stiffness/Stiffness 5 - Lumping the particle',
         build=_build,
         options={
             'particle': study_tools.value_options(PARTICLE_MODELS,

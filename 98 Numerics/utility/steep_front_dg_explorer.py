@@ -153,6 +153,7 @@ def make_study():
     """Assemble the Study for this case."""
     return Study(
         name='steep_front_dg',
+        notebook='stiffness/Stiffness 3b - Steep fronts DG',
         build=_build,
         options={
             'col_dispersion': study_tools.value_options(DISPERSIONS, '{:.0e}'),
@@ -202,6 +203,7 @@ def _tolerance_study():
     """
     return Study(
         name='steep_front_dg_tolerance',
+        notebook='stiffness/Stiffness 3b - Steep fronts DG',
         build=_build_at_tolerance,
         options={
             'col_dispersion': study_tools.value_options(DISPERSIONS, '{:.0e}'),

@@ -62,6 +62,7 @@ def make_study():
     """Assemble the Study for this case."""
     return Study(
         name='flowsheet',
+        notebook='stiffness/Stiffness 9 - Dead volume',
         build=_build,
         options=study_tools.value_options(VOLUMES, formatter=_label),
         label_of=_label,

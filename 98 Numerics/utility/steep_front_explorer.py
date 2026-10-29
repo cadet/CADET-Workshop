@@ -81,6 +81,7 @@ def make_study():
     """Assemble the Study for this case."""
     return Study(
         name='steep_front',
+        notebook='stiffness/Stiffness 3a - Steep fronts FV',
         build=_build,
         options={
             'col_dispersion': study_tools.value_options(DISPERSIONS, '{:.0e}'),

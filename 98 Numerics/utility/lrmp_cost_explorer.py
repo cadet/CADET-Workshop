@@ -24,10 +24,10 @@ import pandas as pd
 import utility.setting_lrm_vs_lrmp as case
 from utility.stiffness_metrics import COLORS, style_axis
 
-DATA = os.path.join('data', 'lrmp_cost')
+DATA = os.path.join('data', 'unused', 'lrmp_cost')
 RUNS_CSV = os.path.join(DATA, 'runs.csv')
 CURVES_CSV = os.path.join(DATA, 'chromatograms.csv')
-WORK = os.path.join('sweeps', 'lrmp_cost')
+WORK = os.path.join(DATA, 'sweeps')
 
 FILM_COEFFICIENTS = (1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0)
 FIXED_RATE_FACTORS = (1e0, 1e2, 1e4, 1e6)
