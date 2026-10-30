@@ -3,7 +3,7 @@
 
 The published convergence studies, and how to reproduce one of their levels.
 
-The json files under data/spatial_discretization/convergence are the results
+The json files under data/01_spatial_discretization/convergence are the results
 CADET-Verification wrote: for each spatial method and refinement level they
 hold the outlet error and the compute time. This module says how each of those
 levels was simulated, so that the notebook can rerun one and measure it, and
@@ -46,7 +46,8 @@ import utility.convergence as convergence  # noqa: E402
 import utility.setting_Col1D_SMA_4comp_LWE_benchmark1 as lwe  # noqa: E402
 import utility.setting_Col1D_langLRM_2comp_benchmark1 as langmuir  # noqa: E402
 
-DIRECTORY = os.path.join('data', 'spatial_discretization', 'convergence')
+DIRECTORY = os.path.join('data', '01_spatial_discretization',
+                         'convergence')
 TIMEOUT = 10800.0
 
 

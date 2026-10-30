@@ -52,6 +52,7 @@ def make_study(start=-2, end=12, step=1):
     """Assemble the Study for this case."""
     return Study(
         name='reaction',
+        notebook='stiffness/Stiffness 8 - A fast reaction',
         build=_build,
         options=study_tools.decade_options(start, end, step),
         label_of=_label,

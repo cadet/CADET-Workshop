@@ -73,8 +73,8 @@ CASES = (
      dict(is_kinetic=True, kinetics_factor=KINETICS_FACTOR)),
 )
 
-WORK = os.path.join('sweeps', 'animation')
-VIDEO = os.path.join('data', 'video', 'column_pulse.webm')
+WORK = os.path.join('data', '02b_stiffness', 'sweeps', 'animation')
+VIDEO = os.path.join('data', '02b_stiffness', 'column_pulse.webm')
 
 
 def interstitial_velocity():
@@ -592,7 +592,8 @@ TOLERANCE_CASES = (
      dict(idas_reltol=1e-08, idas_abstol=1e-10)),
 )
 
-TOLERANCE_VIDEO = os.path.join('data', 'video', 'column_tolerance.webm')
+TOLERANCE_VIDEO = os.path.join('data', '02b_stiffness',
+                               'column_tolerance.webm')
 
 # Bottom of the particle colour scale, as a fraction of the loading in
 # equilibrium with the feed. Everything fainter than this is drawn as
@@ -882,7 +883,8 @@ def make_tolerance_animation(path=TOLERANCE_VIDEO, fps=10, n_frames=270,
 
     return path
 
-SCALES_VIDEO = os.path.join('data', 'video', 'column_scales.webm')
+SCALES_VIDEO = os.path.join('data', '02b_stiffness',
+                            'column_scales.webm')
 
 # The three clocks, in seconds. Each panel plays its own window over the same
 # fraction of the video, so the top runs the whole separation while the bottom
@@ -1123,7 +1125,8 @@ CADENCE_CASES = (
      dict(idas_reltol=1e-01, idas_abstol=1e-03)),
 )
 
-CADENCE_VIDEO = os.path.join('data', 'video', 'column_cadence.webm')
+CADENCE_VIDEO = os.path.join('data', '02b_stiffness',
+                             'column_cadence.webm')
 
 # The stretch of the run that is played, in s. The band is in the middle of the
 # bed here, so the front is moving across cells at a steady rate and every lane
@@ -1373,7 +1376,8 @@ ABSTOL_CASES = (
 )
 
 ABSTOL_RELTOL = 1.0e-06
-ABSTOL_VIDEO = os.path.join('data', 'video', 'column_abstol.webm')
+ABSTOL_VIDEO = os.path.join('data', '02b_stiffness',
+                            'column_abstol.webm')
 
 # Ten decades, so that the faint tail of the particle has somewhere to go. The
 # fine lane decays through this whole range and out of the bottom; the coarse

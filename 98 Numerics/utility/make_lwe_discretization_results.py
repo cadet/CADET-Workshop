@@ -64,9 +64,11 @@ STUDIES = {
     'grm': {
         'particle_type': 'GENERAL_RATE_PARTICLE',
         'grid': GRID_GRM,
-        'directory': os.path.join('data', 'spatial_discretization',
+        'directory': os.path.join('data', '01_spatial_discretization',
                                   'lwe_discretization'),
-        'reference_file': os.path.join('data', 'ref_LWE.h5'),
+        'reference_file': os.path.join('data',
+                                       '02_time_discretization',
+                                       'ref_LWE.h5'),
         'description': 'general rate model, resolved particle',
     },
 }

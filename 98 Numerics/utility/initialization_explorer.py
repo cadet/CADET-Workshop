@@ -85,6 +85,7 @@ def make_study():
     """Assemble the Study for this case."""
     study = Study(
         name='initialization',
+        notebook='stiffness/Stiffness 7 - Consistent initialization',
         build=_build,
         options={
             'n_sections': study_tools.value_options(SECTION_COUNTS, '{:d}'),

@@ -108,6 +108,7 @@ def make_study():
     """Assemble the Study for this case."""
     return Study(
         name='cycle',
+        notebook='stiffness/Stiffness 11 - A cyclic reaction',
         build=_build,
         options={
             'n_species': study_tools.value_options(SPECIES, '{:d}'),

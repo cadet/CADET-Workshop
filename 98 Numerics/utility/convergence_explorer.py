@@ -7,7 +7,7 @@ error against the compute time puts the methods on a common footing: the useful
 method is the one that reaches a given accuracy soonest.
 
 The measurements are the ones published with CADET-Verification, read from the
-json files under ``data/spatial_discretization/convergence``. Those hold
+json files under ``data/01_spatial_discretization/convergence``. Those hold
 errors and compute times but no chromatograms, so the outlets of the sweep are
 copied out of the result files CADET-Verification wrote, by
 ``utility/convergence_settings.py --collect``, and stored beside the json
@@ -36,7 +36,13 @@ import numpy as np
 
 from utility import convergence_settings as recipes
 
-DEFAULT_DIRECTORY = Path('data') / 'spatial_discretization' / 'convergence'
+DEFAULT_DIRECTORY = (Path('data') / '01_spatial_discretization'
+                     / 'convergence')
+
+# Reruns triggered from a slider land beside the published results
+# of the notebook that offers them.
+RERUN_DIRECTORY = (Path('data') / '01_spatial_discretization'
+                   / 'rerun')
 
 # Colour and marker per method, following the published figures: squares for
 # the finite volume scheme, circles for the DG degrees. Orange is left out
@@ -240,7 +246,7 @@ def load_convergence(study='lrmp_sma', directory=DEFAULT_DIRECTORY):
     return loaded
 
 
-def run_level(study, level, output_directory='data'):
+def run_level(study, level, output_directory=RERUN_DIRECTORY):
     """Simulate one level as the published sweep did, and measure it.
 
     Fills in the level's measured compute time, errors and outlet. The errors
@@ -431,7 +437,7 @@ def plot_case(study, level, history=None, norm=DEFAULT_NORM, axes=None):
 
 
 def convergence_explorer(study='lrmp_sma', directory=DEFAULT_DIRECTORY,
-                         output_directory='data'):
+                         output_directory=RERUN_DIRECTORY):
     """Slider explorer over one published convergence study.
 
     The sliders pick a level, marked in orange. Every level that is visited

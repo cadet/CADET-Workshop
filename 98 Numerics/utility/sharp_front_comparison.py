@@ -15,6 +15,11 @@ from utility import setting_Col1D_transport_realistic as transport
 
 DEFAULT_METHODS = (('FV', 3), ('DG', 1), ('DG', 2), ('DG', 3))
 
+# Reruns triggered from a slider land beside the published results
+# of the notebook that offers them.
+RERUN_DIRECTORY = (Path('data') / '01_spatial_discretization'
+                   / 'rerun')
+
 
 def method_settings(methods):
     """Map (family, order) tuples to display labels and solver settings."""
@@ -51,7 +56,8 @@ class FrontResult:
 
 
 def run_sharp_front_comparison(
-        total_nodes=96, dispersion=1e-10, output_directory='data', mode='pulse',
+        total_nodes=96, dispersion=1e-10, output_directory=RERUN_DIRECTORY,
+        mode='pulse',
         methods=DEFAULT_METHODS, on_result=None):
     """Run selected methods at equal axial DOFs, notifying after each result.
 
@@ -186,7 +192,8 @@ def plot_sharp_front_comparison(
     return fig
 
 
-def sharp_gradient_explorer(mode='pulse', output_directory='data', methods=DEFAULT_METHODS):
+def sharp_gradient_explorer(mode='pulse', output_directory=RERUN_DIRECTORY,
+                            methods=DEFAULT_METHODS):
     """Run on click; ``mode='both'`` pairs a step and pulse with shared controls.
 
     Curve buttons redraw cached results only and apply to both panels.

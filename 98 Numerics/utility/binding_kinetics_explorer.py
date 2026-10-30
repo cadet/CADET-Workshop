@@ -62,6 +62,7 @@ def make_study(n_elements=N_ELEMENTS, start=-6, end=14, step=1):
     """
     return Study(
         name='binding_kinetics_explorer',
+        notebook='stiffness/Stiffness 1 - Binding kinetics',
         build=_build(n_elements),
         options=study_tools.decade_options(
             start, end, step, tail=(EQUILIBRIUM_LABEL, None)),

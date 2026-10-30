@@ -74,6 +74,7 @@ def make_study(col_dispersion=case.AXIAL_DISPERSION):
     """
     return Study(
         name='transport_spectrum',
+        notebook='stiffness/Stiffness 2 - Spatial discretization',
         build=_build(col_dispersion),
         options={
             'polynomial_degree': study_tools.value_options(

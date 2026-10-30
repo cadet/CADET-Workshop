@@ -7,7 +7,7 @@ chosen spatial method, axial resolution and particle resolution.
 Simulating a setting costs seconds to minutes, which is far too slow to explore
 with a slider, so every setting is simulated once by
 ``utility/make_lwe_discretization_results.py`` and stored under
-``data/spatial_discretization/lwe_discretization``. The sliders load those
+``data/01_spatial_discretization/lwe_discretization``. The sliders load those
 results, and the mode
 switch reruns the selected setting live when you want to see it happen.
 
@@ -33,8 +33,15 @@ from utility import setting_Col1D_SMA_4comp_LWE_benchmark1 as lwe
 from utility.convergence_explorer import draw_outlet
 
 
-DEFAULT_STORE = Path('data') / 'spatial_discretization' / 'lwe_discretization'
-DEFAULT_REFERENCE = Path('data') / 'ref_LWE.h5'
+DEFAULT_STORE = (Path('data') / '01_spatial_discretization'
+                 / 'lwe_discretization')
+DEFAULT_REFERENCE = (Path('data') / '02_time_discretization'
+                     / 'ref_LWE.h5')
+
+# Reruns triggered from a slider land beside the published results
+# of the notebook that offers them.
+RERUN_DIRECTORY = (Path('data') / '01_spatial_discretization'
+                   / 'rerun')
 COMPONENT_NAMES = ('Salt', 'Component 1', 'Component 2', 'Component 3')
 
 STORED, RERUN = 'Load stored result', 'Rerun simulation'
@@ -185,7 +192,7 @@ def read_reference(reference_file=DEFAULT_REFERENCE):
 
 
 def run_case(spatial_method, n_axial, n_particle=1, reference=None,
-             output_directory='data', idas_abstol=1e-12, idas_reltol=1e-10,
+             output_directory=RERUN_DIRECTORY, idas_abstol=1e-12, idas_reltol=1e-10,
              lumped_particle=False):
     """Simulate one discretization and measure its outlet error.
 
@@ -333,7 +340,7 @@ def plot_case(result, reference=None, stored_time=None, history=None,
 
 def lwe_discretization_explorer(
         store=DEFAULT_STORE, reference_file=DEFAULT_REFERENCE,
-        output_directory='data', default_method=0, show_reference=True):
+        output_directory=RERUN_DIRECTORY, default_method=0, show_reference=True):
     """Slider explorer over the stored discretization study.
 
     It starts in ``Load stored result`` mode, where moving a slider shows the

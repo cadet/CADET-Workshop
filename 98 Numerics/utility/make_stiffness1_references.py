@@ -18,7 +18,7 @@ Run from the chapter directory:
 
     python utility/make_stiffness1_references.py
 
-Delete data/stiffness1_references/ and rerun to regenerate them, e.g. after
+Delete data/unused/stiffness1_references/ and rerun to regenerate them, e.g. after
 changing the settings module or the CADET version.
 
 """
@@ -41,7 +41,7 @@ KINETICS_FACTORS = (0.1, 1.0, 10.0, 100.0, 1000.0)
 REFERENCE_GRID = 3200
 ABSTOL, RELTOL = 1e-8, 1e-6
 
-DIRECTORY = os.path.join('data', 'stiffness1_references')
+DIRECTORY = os.path.join('data', 'unused', 'stiffness1_references')
 
 
 def reference_name(factor, is_kinetic):
