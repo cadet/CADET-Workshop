@@ -152,9 +152,12 @@ def get_model(is_kinetic=False, **kwargs):
     column.discretization.SCHUR_SAFETY = 1.0e-8
     column.discretization.USE_ANALYTIC_JACOBIAN = 1
 
+    pore_diffusion = kwargs.get('pore_diffusion')
+
     particle = column.particle_type_000
     particle.has_film_diffusion = True
-    particle.has_pore_diffusion = False
+    particle.has_pore_diffusion = pore_diffusion is not None
+    particle.has_surface_diffusion = False
     particle.par_geom = 'SPHERE'
     particle.par_radius = PARTICLE_RADIUS
     particle.par_coreradius = 0.0
@@ -163,6 +166,18 @@ def get_model(is_kinetic=False, **kwargs):
     particle.init_cp = [0.0]
     particle.nbound = [1]
     particle.init_cs = [0.0]
+
+    if pore_diffusion is not None:
+        # A resolved particle adds a length the model did not have
+        # before, so it adds a time scale: material has to diffuse in
+        # from the surface rather than appear throughout at once.
+        particle.pore_diffusion = [pore_diffusion]
+        particle.surface_diffusion = [0.0]
+        particle.discretization.PAR_DISC_TYPE = 'EQUIDISTANT_PAR'
+        particle.discretization.SPATIAL_METHOD = 'FV'
+        particle.discretization.NCELLS = int(kwargs.get('n_par', 16))
+        particle.discretization.FV_BOUNDARY_ORDER = 2
+
     particle.adsorption_model = 'LINEAR'
     particle.adsorption.is_kinetic = 1 if is_kinetic else 0
     # Both constants carry the same factor, so k_a / k_d stays at K and the two
@@ -1085,6 +1100,536 @@ def make_scales_animation(path=SCALES_VIDEO, fps=12, n_frames=240,
                 f'{int(slow / cap):,}'.replace(',', ' '))
 
             clock.set_text(f'{100 * fraction:3.0f} %')
+
+            figure.canvas.draw()
+            image = np.asarray(figure.canvas.buffer_rgba())[:, :, :3]
+            if image.shape[:2] != (height, width):
+                raise RuntimeError(
+                    f'canvas is {image.shape[1]}x{image.shape[0]}, '
+                    f'expected {width}x{height}')
+            writer.write(image[:, :, ::-1])
+    finally:
+        writer.release()
+
+    return path
+
+
+CADENCE_CASES = (
+    ('fine', 'RELTOL $10^{-8}$', 0,
+     dict(idas_reltol=1e-08, idas_abstol=1e-10)),
+    ('coarse', 'RELTOL $10^{-3}$', 3,
+     dict(idas_reltol=1e-03, idas_abstol=1e-05)),
+    ('sloppy', 'RELTOL $10^{-1}$', 1,
+     dict(idas_reltol=1e-01, idas_abstol=1e-03)),
+)
+
+CADENCE_VIDEO = os.path.join('data', 'video', 'column_cadence.webm')
+
+# The stretch of the run that is played, in s. The band is in the middle of the
+# bed here, so the front is moving across cells at a steady rate and every lane
+# has something to do. Forty seconds at two hundred frames is 0.2 s of
+# simulation per frame, which is the whole point: the coarse run steps every
+# 0.9 s and the sloppy one every 1.7 s, so both spend several frames showing a
+# picture they computed a while ago.
+CADENCE_WINDOW = (140.0, 180.0)
+
+
+def make_cadence_animation(path=CADENCE_VIDEO, fps=12, n_frames=200,
+                           width=3840, height=2160, dpi=240, force=False):
+    """The same column at three tolerances, each held between its own steps.
+
+    Nothing is interpolated. Each lane shows the field its own integrator last
+    computed, so a lane with large steps literally freezes until it takes the
+    next one. Played at 0.2 s of simulation per frame the three cadences are
+    plainly different: the fine run moves every frame, the coarse one holds for
+    about five, the sloppy one for about thirteen.
+
+    The lanes answer two different questions and it is worth keeping them
+    apart. Fine against coarse is a *cadence* difference only - six times fewer
+    steps for a field that agrees to 0.6 % of the feed, which is the error
+    controller doing its job. Coarse against sloppy is an *accuracy*
+    difference: at RELTOL 1e-1 the field is off by 23 % here, the chromatogram
+    by 31 % of its peak, and the concentration dips to -0.036.
+
+    Colour is logarithmic over five decades in viridis, for both the bulk strip
+    and the particles, so equal decades read as equal colour steps.
+
+    Returns
+    -------
+    str
+    """
+    import cv2
+    import matplotlib.cm
+    from matplotlib.figure import Figure
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from matplotlib.colors import LogNorm
+    from matplotlib.patches import Circle
+
+    from utility.stiffness_metrics import COLORS, style_axis
+
+    runs = {name: simulate('cadence_' + name, force=force, is_kinetic=False,
+                           user_times=False, **settings)
+            for name, _, _, settings in CADENCE_CASES}
+
+    reference = runs['fine']
+    solid_reference = EQUILIBRIUM_CONSTANT * FEED
+    colormap = matplotlib.colormaps['viridis']
+    norm = LogNorm(vmin=COLOUR_FLOOR, vmax=1.0)
+
+    start, stop = CADENCE_WINDOW
+    frame_times = np.linspace(start, stop, n_frames)
+    scale = width / dpi / 9.5
+
+    n_col = reference['bulk'].shape[1]
+    positions = (np.arange(n_col) + 0.5) * BED_LENGTH / n_col
+    sample = np.linspace(0, n_col - 1, N_PARTICLES).astype(int)
+
+    figure = Figure(figsize=(16.0, 9.0))
+    FigureCanvasAgg(figure)
+    figure.set_dpi(dpi)
+
+    left, span = 0.085, 0.900
+    strips, particle_rows, titles, ages, borders = [], [], [], [], []
+
+    for lane, (name, label, colour, _) in enumerate(CADENCE_CASES):
+        top = 0.895 - lane * 0.185
+
+        strip_axis = figure.add_axes([left, top - 0.050, span, 0.050])
+        strip_axis.imshow(
+            np.clip(runs[name]['bulk'][0], COLOUR_FLOOR, 1.0)[None, :],
+            aspect='auto', cmap=colormap, norm=norm, origin='lower',
+            extent=(0.0, BED_LENGTH, 0.0, 1.0), interpolation='bilinear')
+        strips.append(strip_axis.images[0])
+        strip_axis.set_xticks([])
+        strip_axis.set_yticks([])
+        strip_axis.set_ylabel('bulk', rotation=0, ha='right', va='center',
+                              fontsize=9 * scale)
+        for spine in strip_axis.spines.values():
+            spine.set_edgecolor('#BBBBBB')
+            spine.set_linewidth(1.6 * scale)
+        borders.append(list(strip_axis.spines.values()))
+
+        titles.append(strip_axis.set_title('', loc='left', pad=10 * scale,
+                                           fontsize=11.5 * scale,
+                                           color=COLORS[colour]))
+        ages.append(strip_axis.text(1.0, 1.08, '', transform=strip_axis.transAxes,
+                                    ha='right', va='bottom',
+                                    fontsize=10.5 * scale))
+
+        particle_axis = figure.add_axes(
+            [left, top - 0.050 - 0.004 - 0.082, span, 0.082])
+        particle_axis.set_xlim(0.0, BED_LENGTH)
+        particle_axis.set_xticks([])
+        particle_axis.set_yticks([])
+        particle_axis.set_ylabel('particles', rotation=0, ha='right',
+                                 va='center', fontsize=9 * scale)
+        for spine in particle_axis.spines.values():
+            spine.set_visible(False)
+        particle_rows.append(particle_axis)
+
+    particle_rows[-1].set_xticks(np.linspace(0.0, BED_LENGTH, 6))
+    particle_rows[-1].tick_params(labelsize=9 * scale)
+    particle_rows[-1].set_xlabel('axial position / m', fontsize=10 * scale)
+
+    # ---- the answers the three lanes end up with ----
+    outlet = figure.add_axes([left, 0.085, span, 0.205])
+    peak = reference['outlet'].max()
+    for name, label, colour, _ in CADENCE_CASES:
+        run = runs[name]
+        deviation = np.abs(
+            np.interp(reference['time'], run['time'], run['outlet'])
+            - reference['outlet']).max() / peak
+        outlet.plot(run['time'], run['outlet'], color=COLORS[colour],
+                    linewidth=(3.2 if name == 'fine' else 1.8) * scale,
+                    alpha=0.5 if name == 'fine' else 1.0,
+                    linestyle='-' if name == 'fine' else '--',
+                    label=f'{label}, {len(run["time"]) - 1} steps'
+                          + ('' if name == 'fine'
+                             else f', {100 * deviation:.1f} % off at the peak'))
+    cursor = outlet.axvline(frame_times[0], color='#555555',
+                            linewidth=1.3 * scale)
+    outlet.axvspan(start, stop, color='#999999', alpha=0.15)
+    outlet.set_xlim(reference['time'][0], reference['time'][-1])
+    outlet.set_xlabel('time / s', fontsize=10 * scale)
+    outlet.set_ylabel(r'outlet / mol m$^{-3}$', fontsize=9 * scale)
+    outlet.tick_params(labelsize=9 * scale)
+    outlet.legend(frameon=False, fontsize=9.5 * scale, loc='upper left')
+    outlet.set_title('the answer each lane ends up with', loc='left',
+                     fontsize=11 * scale)
+    style_axis(outlet)
+
+    clock = figure.text(0.015, 0.975, '', ha='left', va='center',
+                        fontsize=11 * scale)
+    figure.text(0.50, 0.975,
+                'three tolerances, each lane held until it computes its '
+                'next step',
+                ha='center', va='center', fontsize=10.5 * scale,
+                color='#444444')
+
+    bar_axis = figure.add_axes([0.820, 0.955, 0.155, 0.011])
+    bar = figure.colorbar(
+        matplotlib.cm.ScalarMappable(norm=norm, cmap=colormap),
+        cax=bar_axis, orientation='horizontal')
+    bar.set_ticks([1e-05, 1e-03, 1e-01, 1.0])
+    bar.set_ticklabels(['$10^{-5}$', '$10^{-3}$', '$10^{-1}$', 'feed'])
+    bar_axis.minorticks_off()
+    bar_axis.tick_params(labelsize=8 * scale, length=2 * scale)
+    bar_axis.set_title('concentration, log scale', fontsize=8.5 * scale,
+                       color='#444444', pad=3 * scale)
+
+    width_inches, height_inches = figure.get_size_inches()
+    box = particle_rows[0].get_position()
+    half = 0.5 * BED_LENGTH * ((box.height * height_inches)
+                               / (box.width * width_inches))
+    radius = min(0.85 * BED_LENGTH / (2 * N_PARTICLES), 0.94 * half)
+
+    circles = []
+    for particle_axis in particle_rows:
+        particle_axis.set_ylim(-half, half)
+        row = []
+        for index in sample:
+            patch = Circle((positions[index], 0.0), radius,
+                           facecolor=colormap(0.0), edgecolor='#333333',
+                           linewidth=1.1 * scale, zorder=2)
+            particle_axis.add_patch(patch)
+            row.append(patch)
+        circles.append(row)
+
+    held = {}
+    for name, _, _, _ in CADENCE_CASES:
+        run = runs[name]
+        bulk, taken = _hold(run['time'], run['bulk'], frame_times)
+        solid, _ = _hold(run['time'], run['solid'], frame_times)
+        held[name] = {'bulk': bulk, 'solid': solid, 'steps': taken,
+                      'times': run['time']}
+
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    writer = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*'VP90'), fps,
+                             (width, height))
+    if not writer.isOpened():
+        raise RuntimeError(f'could not open a VP9 encoder for {path}')
+
+    frame_step = (stop - start) / (n_frames - 1)
+
+    try:
+        for frame in range(n_frames):
+            now = frame_times[frame]
+
+            for lane, (name, label, colour, _) in enumerate(CADENCE_CASES):
+                data = held[name]
+                strips[lane].set_data(
+                    np.clip(data['bulk'][frame], COLOUR_FLOOR, 1.0)[None, :])
+                for position, index in enumerate(sample):
+                    loading = data['solid'][frame, index] / solid_reference
+                    circles[lane][position].set_facecolor(colormap(norm(
+                        float(np.clip(loading, COLOUR_FLOOR, 1.0)))))
+
+                taken = int(data['steps'][frame] - data['steps'][0])
+                titles[lane].set_text(
+                    f'{label}     -     {taken} steps so far in this window')
+
+                age = now - data['times'][data['steps'][frame]]
+                fresh = age < frame_step
+                ages[lane].set_text('just stepped' if fresh
+                                    else f'frozen for {age:.2f} s')
+                ages[lane].set_color(COLORS[colour] if fresh else '#888888')
+                ages[lane].set_weight('bold' if fresh else 'normal')
+                for spine in borders[lane]:
+                    spine.set_edgecolor(
+                        COLORS[colour] if fresh else '#BBBBBB')
+
+            cursor.set_xdata([now] * 2)
+            clock.set_text(f't = {now:.1f} s')
+
+            figure.canvas.draw()
+            image = np.asarray(figure.canvas.buffer_rgba())[:, :, :3]
+            if image.shape[:2] != (height, width):
+                raise RuntimeError(
+                    f'canvas is {image.shape[1]}x{image.shape[0]}, '
+                    f'expected {width}x{height}')
+            writer.write(image[:, :, ::-1])
+    finally:
+        writer.release()
+
+    return path
+
+
+# The resolved-particle column used for the ABSTOL comparison. Pore diffusion
+# gives the particle an interior: sixteen radial shells whose concentrations
+# span many decades once the band has gone, and which are therefore exactly the
+# quantities a global ABSTOL stops controlling. The diffusivity is chosen as
+# fast as it can be while still earning its radial grid - any slower and the
+# chromatogram is smeared into uselessness, any faster and the shells are a
+# copy of each other.
+ABSTOL_MODEL = dict(pore_diffusion=3.0e-10, n_par=16, end_time=500.0)
+
+# Both lanes ask for the same number of significant digits. They differ only in
+# the floor below which the integrator stops caring, and that floor is seven
+# decades apart. 5e-3 is the loosest setting that still leaves the chromatogram
+# visually identical: it costs 1.3 % of the peak and 5.9x fewer steps.
+ABSTOL_CASES = (
+    ('fine', r'ABSTOL $10^{-10}$', 0, 1.0e-10),
+    ('coarse', r'ABSTOL $5\cdot10^{-3}$', 1, 5.0e-03),
+)
+
+ABSTOL_RELTOL = 1.0e-06
+ABSTOL_VIDEO = os.path.join('data', 'video', 'column_abstol.webm')
+
+# Ten decades, so that the faint tail of the particle has somewhere to go. The
+# fine lane decays through this whole range and out of the bottom; the coarse
+# lane stops at its own noise floor near 1e-6 and stays there.
+ABSTOL_FLOOR = 1.0e-10
+
+ABSTOL_PROBE = 60          # the axial cell drawn in the trace panel
+ABSTOL_PARTICLES = 13
+
+
+def make_abstol_animation(path=ABSTOL_VIDEO, fps=12, n_frames=250,
+                          width=3840, height=2160, dpi=240, force=False):
+    """Same chromatogram, different particle interiors.
+
+    Two runs of one column with a radially resolved particle, at the same
+    RELTOL and seven decades apart in ABSTOL. The chromatograms agree to an
+    NRMSE of 0.30 % of the peak and the bulk strips are indistinguishable,
+    which is the control. What differs is everything small:
+
+        the coarse lane stops resolving the particle below about 1e-6,
+        holds a smooth *negative* radial profile three decades deep,
+        and never decays past its own noise floor,
+
+    while the fine lane carries the pore liquid cleanly down through twenty
+    decades. Neither of those facts reaches the outlet, which is the point: a
+    global ABSTOL is a statement about the largest component in the model, and
+    every smaller one is silently along for the ride.
+
+    Each particle is drawn as sixteen concentric rings, outermost shell
+    outermost, coloured by |c| on a ten decade viridis scale. The sign is not
+    drawn: much of what the coarse lane is left holding is negative, which the
+    trace panel and the text say rather than the picture.
+
+    Returns
+    -------
+    str
+    """
+    import cv2
+    import matplotlib.cm
+    from matplotlib.figure import Figure
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from matplotlib.colors import LogNorm
+    from matplotlib.patches import Circle
+
+    from utility.stiffness_metrics import COLORS, style_axis
+
+    runs = {name: simulate(f'abstol_{name}', force=force, is_kinetic=False,
+                           user_times=False, idas_reltol=ABSTOL_RELTOL,
+                           idas_abstol=abstol, **ABSTOL_MODEL)
+            for name, _, _, abstol in ABSTOL_CASES}
+
+    reference = runs['fine']
+    end_time = ABSTOL_MODEL['end_time']
+    n_par = ABSTOL_MODEL['n_par']
+    n_col = reference['bulk'].shape[1]
+    positions = (np.arange(n_col) + 0.5) * BED_LENGTH / n_col
+    sample = np.linspace(0, n_col - 1, ABSTOL_PARTICLES).astype(int)
+
+    colormap = matplotlib.colormaps['viridis']
+    norm = LogNorm(vmin=ABSTOL_FLOOR, vmax=1.0)
+    frame_times = np.linspace(0.0, end_time, n_frames)
+    scale = width / dpi / 9.5
+
+    figure = Figure(figsize=(16.0, 9.0))
+    FigureCanvasAgg(figure)
+    figure.set_dpi(dpi)
+
+    left, span = 0.085, 0.900
+    strips, pores, titles, ring_rows, borders = [], [], [], [], []
+
+    for lane, (name, label, colour, abstol) in enumerate(ABSTOL_CASES):
+        top = 0.880 - lane * 0.215
+        run = runs[name]
+
+        for which, (store, field, tag) in enumerate((
+                (strips, run['bulk'], 'bulk'),
+                (pores, run['particle'][:, :, 0], 'pore'))):
+            axis = figure.add_axes([left, top - 0.032 - which * 0.036,
+                                    span, 0.032])
+            axis.imshow(np.clip(np.abs(field[0]), ABSTOL_FLOOR, 1.0)[None, :],
+                        aspect='auto', cmap=colormap, norm=norm,
+                        origin='lower', extent=(0.0, BED_LENGTH, 0.0, 1.0),
+                        interpolation='bilinear')
+            store.append(axis.images[0])
+            axis.set_xticks([])
+            axis.set_yticks([])
+            axis.set_ylabel(tag, rotation=0, ha='right', va='center',
+                            fontsize=9 * scale)
+            for spine in axis.spines.values():
+                spine.set_edgecolor('#777777')
+                spine.set_linewidth(1.1 * scale)
+            if which == 0:
+                titles.append(axis.set_title('', loc='left', pad=10 * scale,
+                                             fontsize=11.5 * scale,
+                                             color=COLORS[colour]))
+
+        rings = figure.add_axes([left, top - 0.158, span, 0.082])
+        rings.set_xlim(0.0, BED_LENGTH)
+        rings.set_xticks([])
+        rings.set_yticks([])
+        rings.set_ylabel('particles', rotation=0, ha='right', va='center',
+                         fontsize=9 * scale)
+        for spine in rings.spines.values():
+            spine.set_visible(False)
+        ring_rows.append(rings)
+
+    ring_rows[-1].set_xticks(np.linspace(0.0, BED_LENGTH, 6))
+    ring_rows[-1].tick_params(labelsize=9 * scale)
+    ring_rows[-1].set_xlabel('axial position / m', fontsize=10 * scale)
+
+    # ---- bottom left: the answer, which is the same answer ----
+    chromatogram = figure.add_axes([left, 0.085, 0.395, 0.300])
+    peak = reference['outlet'].max()
+    for name, label, colour, _ in ABSTOL_CASES:
+        run = runs[name]
+        chromatogram.plot(
+            run['time'], run['outlet'], color=COLORS[colour],
+            linewidth=(3.4 if name == 'fine' else 1.8) * scale,
+            alpha=0.45 if name == 'fine' else 1.0,
+            linestyle='-' if name == 'fine' else '--',
+            label=f'{label}, {len(run["time"]) - 1} steps')
+    # Root mean square difference between the two chromatograms over the
+    # whole run, normalised by the peak of the reference. One number for
+    # the agreement, rather than its single worst point.
+    residual = (np.interp(reference['time'], runs['coarse']['time'],
+                          runs['coarse']['outlet'])
+                - reference['outlet'])
+    nrmse = np.sqrt(np.mean(residual ** 2)) / peak
+    outlet_cursor = chromatogram.axvline(0.0, color='#555555',
+                                         linewidth=1.3 * scale)
+    chromatogram.set_xlim(0.0, end_time)
+    chromatogram.set_xlabel('time / s', fontsize=10 * scale)
+    chromatogram.set_ylabel(r'outlet / mol m$^{-3}$', fontsize=9 * scale)
+    chromatogram.tick_params(labelsize=9 * scale)
+    chromatogram.legend(frameon=False, fontsize=9.5 * scale, loc='upper left')
+    chromatogram.set_title(
+        f'chromatogram NRMSE {100 * nrmse:.2f} % of the peak',
+        loc='left', fontsize=11 * scale)
+    style_axis(chromatogram)
+
+    # ---- bottom right: the same two runs, inside one particle ----
+    trace = figure.add_axes([0.585, 0.085, 0.390, 0.300])
+    for name, label, colour, _ in ABSTOL_CASES:
+        run = runs[name]
+        trace.semilogy(run['time'],
+                       np.clip(np.abs(run['particle'][:, ABSTOL_PROBE, 0]),
+                               1e-22, None),
+                       color=COLORS[colour],
+                       linewidth=(3.4 if name == 'fine' else 1.8) * scale,
+                       alpha=0.45 if name == 'fine' else 1.0,
+                       linestyle='-' if name == 'fine' else '--', label=label)
+    trace.axhspan(1e-22, ABSTOL_FLOOR, color='#999999', alpha=0.12)
+    trace.annotate('below the colour scale',
+                   xy=(0.98, 0.06), xycoords='axes fraction', ha='right',
+                   va='bottom', fontsize=9 * scale, color='#666666')
+    trace_cursor = trace.axvline(0.0, color='#555555', linewidth=1.3 * scale)
+    trace.set_xlim(0.0, end_time)
+    trace.set_ylim(1e-18, 2.0)
+    trace.set_xlabel('time / s', fontsize=10 * scale)
+    trace.set_ylabel(r'$|c_p|$ / mol m$^{-3}$', fontsize=9 * scale)
+    trace.tick_params(labelsize=9 * scale)
+    trace.legend(frameon=False, fontsize=9.5 * scale, loc='lower left')
+    trace.set_title(
+        f'one particle, surface shell at z = {positions[ABSTOL_PROBE]:.3f} m',
+        loc='left', fontsize=11 * scale)
+    style_axis(trace)
+
+    clock = figure.text(0.015, 0.975, '', ha='left', va='center',
+                        fontsize=11 * scale)
+    figure.text(0.50, 0.975,
+                f'one column, same RELTOL {ABSTOL_RELTOL:.0e}, '
+                'ABSTOL seven decades apart',
+                ha='center', va='center', fontsize=10.5 * scale,
+                color='#444444')
+
+    bar_axis = figure.add_axes([0.820, 0.955, 0.155, 0.011])
+    bar = figure.colorbar(
+        matplotlib.cm.ScalarMappable(norm=norm, cmap=colormap),
+        cax=bar_axis, orientation='horizontal')
+    bar.set_ticks([1e-10, 1e-08, 1e-06, 1e-04, 1e-02, 1.0])
+    bar.set_ticklabels(['$10^{-10}$', '', '$10^{-6}$', '', '$10^{-2}$',
+                        'feed'])
+    bar_axis.minorticks_off()
+    bar_axis.tick_params(labelsize=8 * scale, length=2 * scale)
+    bar_axis.set_title(r'$|c|$, log scale', fontsize=8.5 * scale,
+                       color='#444444', pad=3 * scale)
+
+    width_inches, height_inches = figure.get_size_inches()
+    box = ring_rows[0].get_position()
+    half = 0.5 * BED_LENGTH * ((box.height * height_inches)
+                               / (box.width * width_inches))
+    radius = min(0.88 * BED_LENGTH / (2 * ABSTOL_PARTICLES), 0.94 * half)
+
+    # Outermost shell first, so the inner ones are drawn over it and the ring
+    # widths come out equal in radius, which is how the grid is spaced.
+    particles = []
+    for rings in ring_rows:
+        rings.set_ylim(-half, half)
+        row = []
+        for index in sample:
+            shells = []
+            for shell in range(n_par):
+                patch = Circle(
+                    (positions[index], 0.0),
+                    radius * (1.0 - shell / n_par),
+                    facecolor=colormap(0.0),
+                    edgecolor='none', zorder=2 + shell)
+                rings.add_patch(patch)
+                shells.append(patch)
+            outline = Circle((positions[index], 0.0), radius,
+                             facecolor='none', edgecolor='#333333',
+                             linewidth=1.2 * scale, zorder=2 + n_par)
+            rings.add_patch(outline)
+            row.append((shells, outline))
+        particles.append(row)
+
+    held = {}
+    for name, _, _, _ in ABSTOL_CASES:
+        run = runs[name]
+        bulk, taken = _hold(run['time'], run['bulk'], frame_times)
+        pore, _ = _hold(run['time'], run['particle'], frame_times)
+        held[name] = {'bulk': bulk, 'pore': pore, 'steps': taken}
+
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    writer = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*'VP90'), fps,
+                             (width, height))
+    if not writer.isOpened():
+        raise RuntimeError(f'could not open a VP9 encoder for {path}')
+
+    try:
+        for frame in range(n_frames):
+            now = frame_times[frame]
+
+            for lane, (name, label, colour, _) in enumerate(ABSTOL_CASES):
+                data = held[name]
+                pore = data['pore'][frame]
+
+                strips[lane].set_data(
+                    np.clip(np.abs(data['bulk'][frame]),
+                            ABSTOL_FLOOR, 1.0)[None, :])
+                pores[lane].set_data(
+                    np.clip(np.abs(pore[:, 0]), ABSTOL_FLOOR, 1.0)[None, :])
+
+                for position, index in enumerate(sample):
+                    shells, outline = particles[lane][position]
+                    profile = pore[index]
+                    for shell, patch in enumerate(shells):
+                        patch.set_facecolor(colormap(norm(float(np.clip(
+                            abs(profile[shell]), ABSTOL_FLOOR, 1.0)))))
+
+                titles[lane].set_text(
+                    f'{label}     -     {int(data["steps"][frame])} steps so far')
+
+            outlet_cursor.set_xdata([now] * 2)
+            trace_cursor.set_xdata([now] * 2)
+            clock.set_text(f't = {now:.0f} s')
 
             figure.canvas.draw()
             image = np.asarray(figure.canvas.buffer_rgba())[:, :, :3]
