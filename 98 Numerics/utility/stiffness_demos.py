@@ -506,10 +506,15 @@ MEASURED_RATES = (
     ('convection, one grid cell', 2.8e-01, 2.5e+01),
 )
 
-# Courant number measured in the most convection dominated run of the chapter:
-# polynomial degree 15, Peclet 1.1e9, median step size 1.6e-2 s against a nodal
-# convection rate of 25.5 1/s.
-MEASURED_COURANT = 0.4
+# Courant number sustained by the most convection dominated run of the
+# chapter: polynomial degree 15 on 256 nodes, column Peclet 1.1e7, median step
+# size 7.1e-3 s against a nodal convection rate of 40.9 1/s. Reproducible from
+# the sliders of "Stiffness 3b - Steep fronts DG".
+#
+# The median rather than the largest step: single steps reach C ~ 1e3 in every
+# run of that study, but only after the column has reached steady state, where
+# a convection operator acting on a flat profile excites nothing.
+MEASURED_COURANT = 0.29
 
 # Smallest Courant number at which an upwind convection locus first touches the
 # unstable region of BDF5, found by sampling.
