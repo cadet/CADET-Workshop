@@ -31,6 +31,10 @@ def in_lesson_series(path):
     return len(lessons) > 1 and not any(p.stem.endswith("_exercises") for p in lessons)
 
 
+# A topic of a single lesson can sit directly in its chapter, e.g. 01 Introduction/01.1_about_the_workshop.md.
+SINGLE_LESSON = re.compile(r"^(\d{2}\.\d+)_([a-z0-9_]+)\.md$")
+
+
 class TestWorkshopLayout(unittest.TestCase):
     def test_code_cells_have_valid_syntax(self):
         transformer = TransformerManager()
@@ -84,6 +88,14 @@ class TestWorkshopLayout(unittest.TestCase):
                 topics[relative.parts[0]].add(int(relative.parts[1].split(" ", 1)[0].split(".")[1]))
                 continue
             with self.subTest(path=relative):
+                if len(relative.parts) == 2:
+                    chapter, filename = relative.parts
+                    self.assertRegex(chapter, r"^\d{2} .+")
+                    self.assertRegex(filename, SINGLE_LESSON)
+                    topic_id = SINGLE_LESSON.match(filename).group(1)
+                    self.assertEqual(topic_id.split(".")[0], chapter[:2])
+                    topics[chapter].add(int(topic_id.split(".")[1]))
+                    continue
                 self.assertEqual(len(relative.parts), 3)
                 chapter, topic, filename = relative.parts
                 self.assertRegex(chapter, r"^\d{2} .+")
@@ -112,6 +124,13 @@ class TestWorkshopLayout(unittest.TestCase):
                 continue
             with self.subTest(path=path.relative_to(REPO_ROOT)):
                 topic = path.parent.name
+                single = SINGLE_LESSON.match(path.name)
+                if single:
+                    # The title names the topic, e.g. "01.1 About the Workshop" for 01.1_about_the_workshop.md.
+                    first = next(line[2:] for line in path.read_text().splitlines() if line.startswith("# "))
+                    topic_id, name = first.split(" ", 1)
+                    self.assertEqual((topic_id, re.sub(r"\W+", "_", name.lower())), single.groups())
+                    topic = first
                 expected = topic + (": Exercises" if path.stem.endswith("_exercises") else "")
                 titles = []
                 fenced = False
