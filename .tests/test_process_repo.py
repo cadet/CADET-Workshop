@@ -83,6 +83,7 @@ class Test_Workshop_Tools(unittest.TestCase):
                 self.assertTrue(notebook.exists(), notebook)
                 published = json.loads(notebook.read_text())
                 self.assertEqual(published["metadata"]["jupytext"]["formats"], "ipynb")
+                self.assertEqual(published["metadata"]["kernelspec"], process_repo.WORKSHOP_KERNELSPEC)
                 cells = published["cells"]
                 expected = expected_cells[lesson]
                 self.assertEqual(len(cells), len(expected), notebook)

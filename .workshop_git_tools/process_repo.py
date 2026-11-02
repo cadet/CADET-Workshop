@@ -276,6 +276,15 @@ def notebook_links(text):
     """
     return LESSON_LINK.sub(lambda m: f"]({m.group(1)}.ipynb{m.group(2) or ''})", text)
 
+# The CADET-Hub workshop kernel (nb_conda_kernels name of the 0_CADET_Workshop env). Where it
+# is missing, JupyterLab falls back to the only Python kernel, or asks if there are several.
+WORKSHOP_KERNELSPEC = {
+    "display_name": "Python [conda env:0_CADET_Workshop]",
+    "language": "python",
+    "name": "conda-env-0_CADET_Workshop-py",
+}
+
+
 def convert_myst_to_ipynb(myst_file_path):
     """Convert a MyST markdown file to a Jupyter notebook using jupytext.
 
@@ -294,6 +303,7 @@ def convert_myst_to_ipynb(myst_file_path):
     notebook_path = Path(myst_file_path).with_suffix(".ipynb")
     notebook = json.loads(notebook_path.read_text())
     notebook.setdefault("metadata", {}).setdefault("jupytext", {})["formats"] = "ipynb"
+    notebook["metadata"]["kernelspec"] = WORKSHOP_KERNELSPEC
     for cell in notebook.get("cells", []):
         if cell.get("cell_type") == "markdown":
             source = "".join(cell["source"]) if isinstance(cell["source"], list) else cell["source"]
