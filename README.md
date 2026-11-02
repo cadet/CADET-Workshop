@@ -54,7 +54,7 @@ Chapters contain numbered topics. A lesson and its exercises share the same topi
     02.3b_inlet_profiles_and_events_exercises.md
 ```
 
-**01 Introduction** contains the workshop orientation (01.1), the CADET tools (01.2), the documentation and model catalogs (01.3), how to ask questions, report problems and contribute (01.4) and a glossary of the terms used in the workshop (01.5).
+**01 Introduction** contains the workshop orientation (01.1), the CADET tools (01.2), the documentation and model catalogs (01.3) and a glossary of the terms used in the workshop (01.4).
 
 The source branch keeps `.md` files as the ground truth. Generate and test `.ipynb` files in temporary directories, then delete them. The generated `teaching` and `solution` branches publish `.ipynb` files. Topics without a separate exercise notebook contain only a lesson. Chapter `00` is optional Python preparation; `99` contains additional examples. The [GUI Workbench](<99 Misc/99.2 GUI Workbench/99.2a_gui_workbench_lesson.md>) is available there for optional process setup and code export. [99.3 Reactions](<99 Misc/99.3 Reactions/>) contains the optional batch-CSTR excursion and its exercises.
 
@@ -65,7 +65,7 @@ The main sequence after Process Simulation is **04 Characterization and Optimiza
 3. **04.3 Fractionation:** define product pools and assess separation performance.
 4. **04.4 Process Optimization:** improve operating conditions using the characterized model.
 
-Detailed optimization examples are optional reference material in [99.4 Optimization Basics](<99 Misc/99.4 Optimization Basics/>) and [99.5 Advanced Optimization](<99 Misc/99.5 Advanced Optimization/>). [99.6 Common Problems](<99 Misc/99.6 Common Problems/>) collects typical modeling problems with their symptoms, checks and fixes.
+Detailed optimization examples are optional reference material in [99.4 Optimization Basics](<99 Misc/99.4 Optimization Basics/>) and [99.5 Advanced Optimization](<99 Misc/99.5 Advanced Optimization/>). [99.6 Common Problems](<99 Misc/99.6 Common Problems/>) collects typical modeling problems with their symptoms, checks and fixes. [99.8 Contributing](<99 Misc/99.8 Contributing/>) shows how to ask questions, report problems and contribute.
 
 Each lesson and exercise begins with a contents overview and its introduced or practised concepts and unit operations. **Python used** lists the concrete coding skills involved. **Tools** identifies CADET-Process (Python), CADET-GUI widgets or other interactive controls. Widget roles follow the CADET-GUI name directly.
 

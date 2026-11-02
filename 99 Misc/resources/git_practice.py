@@ -1,4 +1,4 @@
-"""Practice repository for the optional git exercise in 01.4 Contributing.
+"""Practice repository for the optional git exercise in 99.8 Contributing.
 
 The repository lives in a temporary folder, so nothing touches the workshop files
 and nothing is sent anywhere.
