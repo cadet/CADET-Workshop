@@ -264,8 +264,9 @@ def run_func_over_args_list(func, args_list, backend=None, n_cores=1):
 
 # --------------- domain specific helpers ---------------
 
-# A relative link to a lesson or exercises source, e.g. ](../02.2%20Model%20Templates/02.2a_model_templates_lesson.md)
-LESSON_LINK = re.compile(r"\]\((?!\w+:)([^)\s]*?\d{2}\.\d+[ab]_[a-z0-9_]+_(?:lesson|exercises))\.md(#[^)\s]*)?\)")
+# A relative link to a Markdown source, e.g. ](../02.2%20Model%20Templates/02.2a_model_templates_lesson.md),
+# or in angle brackets for paths with spaces.
+LESSON_LINK = re.compile(r"\]\((?!<?\w+:)(<[^>]*?|[^)\s<]*?)\.md(#[^)\s>]*)?(>?)\)")
 
 
 def notebook_links(text):
@@ -274,7 +275,11 @@ def notebook_links(text):
     Lessons link to each other's ``.md`` sources, which open in JupyterLab through jupytext on the
     source branch. On the generated branches, only the ``.ipynb`` files exist.
     """
-    return LESSON_LINK.sub(lambda m: f"]({m.group(1)}.ipynb{m.group(2) or ''})", text)
+    def rewrite(m):
+        if "README" in m.group(1):
+            return m.group(0)
+        return f"]({m.group(1)}.ipynb{m.group(2) or ''}{m.group(3)})"
+    return LESSON_LINK.sub(rewrite, text)
 
 # The CADET-Hub workshop kernel (nb_conda_kernels name of the 0_CADET_Workshop env). Where it
 # is missing, JupyterLab falls back to the only Python kernel, or asks if there are several.

@@ -136,4 +136,4 @@ If (1) and (2) hold and (3) is negligible, the notebook gets shorter and the cha
 
 ...
 
-**Now:** Return to [**99.7g User Stories**](../99.7g_user_stories_lesson.ipynb).
+**Now:** Return to [**99.7g User Stories**](../99.7g_user_stories_lesson.md).

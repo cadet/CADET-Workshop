@@ -526,4 +526,4 @@ unusable.
 - Changing initialization settings can help identify where the failure originates. When equilibrium binding is intended, using the rapid-equilibrium formulation avoids unnecessary kinetic parameters and the associated numerical difficulties.
 - Examine the underlying model equations and parameter values before adjusting numerical settings. A mathematically equivalent formulation is not necessarily equally robust numerically.
 
-**Now:** return to [**99.7g User Stories**](../99.7g_user_stories_lesson.ipynb).
+**Now:** return to [**99.7g User Stories**](../99.7g_user_stories_lesson.md).

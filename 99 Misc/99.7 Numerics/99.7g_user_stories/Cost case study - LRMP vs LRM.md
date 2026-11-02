@@ -603,4 +603,4 @@ less.
 - GMRES performance depends on residual reduction, finite-precision effects, orthogonalization cost, and restart behavior.
 - The settings `SCHUR_SAFETY`, `MAX_KRYLOV`, `MAX_RESTARTS`, and `GS_TYPE` influence solver performance and robustness. Their effects should be evaluated using measured runtime and solution accuracy rather than assuming that stricter settings always lead to better results.
 
-**Next:** Return to [**99.7g User Stories**](../99.7g_user_stories_lesson.ipynb) to explore another diagnostic case.
+**Next:** Return to [**99.7g User Stories**](../99.7g_user_stories_lesson.md) to explore another diagnostic case.
