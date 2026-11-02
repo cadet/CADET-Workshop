@@ -17,6 +17,20 @@ from process_repo import lesson_files
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
+def in_lesson_series(path):
+    """Whether a lesson belongs to a topic of several lessons and no exercises, e.g. 99.7 Numerics.
+
+    Such a topic is a self-contained series: the a/b roles, one title per topic and a flat
+    folder do not apply to it.
+    """
+    relative = path.relative_to(REPO_ROOT)
+    if len(relative.parts) < 3:
+        return False
+    topic = REPO_ROOT.joinpath(*relative.parts[:2])
+    lessons = [p for p in lesson_files(REPO_ROOT) if topic in p.parents]
+    return len(lessons) > 1 and not any(p.stem.endswith("_exercises") for p in lessons)
+
+
 class TestWorkshopLayout(unittest.TestCase):
     def test_code_cells_have_valid_syntax(self):
         transformer = TransformerManager()
@@ -66,6 +80,9 @@ class TestWorkshopLayout(unittest.TestCase):
         topics = defaultdict(set)
         for path in lesson_files(REPO_ROOT):
             relative = path.relative_to(REPO_ROOT)
+            if in_lesson_series(path):
+                topics[relative.parts[0]].add(int(relative.parts[1].split(" ", 1)[0].split(".")[1]))
+                continue
             with self.subTest(path=relative):
                 self.assertEqual(len(relative.parts), 3)
                 chapter, topic, filename = relative.parts
@@ -91,6 +108,8 @@ class TestWorkshopLayout(unittest.TestCase):
 
     def test_topic_titles_and_section_headings(self):
         for path in lesson_files(REPO_ROOT):
+            if in_lesson_series(path):
+                continue
             with self.subTest(path=path.relative_to(REPO_ROOT)):
                 topic = path.parent.name
                 expected = topic + (": Exercises" if path.stem.endswith("_exercises") else "")

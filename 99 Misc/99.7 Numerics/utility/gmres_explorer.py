@@ -34,7 +34,7 @@ import utility.setting_lrm_vs_lrmp as case
 from utility.stiffness_metrics import COLORS, style_axis
 
 DATA = os.path.join('data', 'user_stories',
-                    'Cost case study - LRMP vs LRM')
+                    'cost_case_study_lrmp_vs_lrm')
 RUNS_CSV = os.path.join(DATA, 'runs.csv')
 CURVES_CSV = os.path.join(DATA, 'chromatograms.csv')
 WORK = os.path.join(DATA, 'sweeps', 'gmres')
