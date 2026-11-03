@@ -118,10 +118,11 @@ class Study:
     def work_directory(self):
         """Where this study keeps its simulation files.
 
-        Under the folder of the notebook that shows the study, so
-        that everything one notebook owns sits in one place.
+        Under `generated/`, in the folder of the notebook that shows
+        the study. It is simulation output, so it is disposable;
+        `data/` holds only what the notebooks read.
         """
-        return os.path.join('data', self.notebook, 'sweeps',
+        return os.path.join('generated', self.notebook, 'sweeps',
                             self.name)
 
     @property

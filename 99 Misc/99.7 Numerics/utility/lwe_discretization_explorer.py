@@ -40,7 +40,7 @@ DEFAULT_REFERENCE = (Path('data') / '02_time_discretization'
 
 # Reruns triggered from a slider land beside the published results
 # of the notebook that offers them.
-RERUN_DIRECTORY = (Path('data') / '01_spatial_discretization'
+RERUN_DIRECTORY = (Path('generated') / '01_spatial_discretization'
                    / 'rerun')
 COMPONENT_NAMES = ('Salt', 'Component 1', 'Component 2', 'Component 3')
 

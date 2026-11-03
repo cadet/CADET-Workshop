@@ -57,6 +57,11 @@ GRID_GRM = {
     5: ((4, 8, 16, 32), (1, 2, 4, 8)),
 }
 
+# Each level is simulated here and deleted again; only the summary
+# lands in the published directory under data/.
+WORK_DIRECTORY = os.path.join('generated', '01_spatial_discretization',
+                              'lwe_discretization')
+
 ABSTOL, RELTOL = 1e-12, 1e-10
 TIMEOUT = 7200.0
 
@@ -211,8 +216,10 @@ def run_study(name, study, force=False):
         label = f'{method_label(method):>4} {n_axial:>4} axial'
         label += '' if lumped else f' {n_particle:>3} particle'
         try:
+            os.makedirs(WORK_DIRECTORY, exist_ok=True)
             times, outlet, simulation_time = simulate(
-                method, n_axial, n_particle, directory, study['particle_type'])
+                method, n_axial, n_particle, WORK_DIRECTORY,
+                study['particle_type'])
         except Exception as error:                            # noqa: BLE001
             failed.append((method, n_axial, n_particle, str(error)[:200]))
             print(f'[{number}/{len(todo)}] {label}   FAILED: {str(error)[:120]}',

@@ -44,7 +44,8 @@ def run_simulation(filename, polynomial_degree, n_elements, reltol, abstol):
     return outlet, runtime
 
 
-def make_explorer(output_directory=Path('data'), polynomial_degree=3, n_elements=32,
+def make_explorer(output_directory=Path('generated'),
+                  polynomial_degree=3, n_elements=32,
                   reltol=1e-2, abstol=1e-4):
     """Build the RELTOL/ABSTOL slider widget on a fixed spatial discretization.
 
