@@ -222,7 +222,7 @@
   <!-- outlet -->
   <line x1="560" y1="125" x2="715" y2="125" stroke="#1f2937" stroke-width="2" marker-end="url(#arrow)"/>
   <text x="600" y="112">Outlet</text>
-  <text x="600" y="150" font-style="italic">c(L, t)</text>
+  <text x="600" y="150" font-style="italic">c<tspan font-size="12" dy="-8">ℓ</tspan><tspan dy="8">(L, t)</tspan></text>
 
   <!-- interstitial velocity -->
   <rect x="290" y="104" width="180" height="42" rx="6" fill="#ffffff" fill-opacity="0.9"/>
@@ -241,7 +241,7 @@
 
   <!-- porosity legend -->
   <rect x="200" y="22" width="18" height="18" fill="#dbeafe" stroke="#5b6370"/>
-  <text x="226" y="36">liquid: fraction <tspan font-style="italic">ε</tspan><tspan font-size="12" dy="4">t</tspan><tspan dy="-4" dx="4">of the column volume</tspan></text>
+  <text x="226" y="36">mobile phase: total porosity <tspan font-style="italic">ε</tspan><tspan font-size="12" dy="4">t</tspan><tspan dy="-4" dx="4">of the column volume</tspan></text>
   <circle cx="209" cy="275" r="8" fill="#9ca3af"/>
-  <text x="226" y="280">particles (stationary phase)</text>
+  <text x="226" y="280">particles (solid phase)</text>
 </svg>
