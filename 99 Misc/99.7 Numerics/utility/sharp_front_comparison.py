@@ -106,6 +106,8 @@ def run_sharp_front_comparison(
             model.root.input.model.unit_001.discretization.weno.WENO_ORDER = weno_order
         model.root.input.solver.user_solution_times = sample_times
         method_tag = name.replace(', ', '_')
+        # Git carries no empty folders, so a fresh clone has none.
+        Path(output_directory).mkdir(parents=True, exist_ok=True)
         model.filename = str(
             Path(output_directory) / f'sharp_front_{mode}_{method_tag}_N{total_nodes}_D{dispersion:.6e}.h5'
         )

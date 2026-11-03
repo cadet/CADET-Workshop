@@ -36,7 +36,7 @@ from utility.convergence_explorer import draw_outlet
 DEFAULT_STORE = (Path('data') / '01_spatial_discretization'
                  / 'lwe_discretization')
 DEFAULT_REFERENCE = (Path('data') / '02_time_discretization'
-                     / 'ref_LWE.h5')
+                     / 'reference' / 'ref_LWE.h5')
 
 # Reruns triggered from a slider land beside the published results
 # of the notebook that offers them.
@@ -219,6 +219,8 @@ def run_case(spatial_method, n_axial, n_particle=1, reference=None,
         idas_reltol=idas_reltol,
     )
     tag = ('' if lumped_particle else f'_par{n_particle}')
+    # Git carries no empty folders, so a fresh clone has none.
+    Path(output_directory).mkdir(parents=True, exist_ok=True)
     model.filename = str(
         Path(output_directory)
         / f'lwe_{particle_type[:4].lower()}_{method_label(spatial_method)}'
@@ -360,7 +362,7 @@ def lwe_discretization_explorer(
     abstol, reltol = results.tolerances
     lumped = results.lumped_particle
     # A study of a lumped particle carries its own reference, because an LRMP
-    # is a different model from the GRM that data/ref_LWE.h5 holds.
+    # is a different model from the GRM that the LWE reference holds.
     reference = (results.reference if results.reference is not None
                  else read_reference(reference_file))
     measured = {}

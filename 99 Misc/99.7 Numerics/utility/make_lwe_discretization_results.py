@@ -68,7 +68,7 @@ STUDIES = {
                                   'lwe_discretization'),
         'reference_file': os.path.join('data',
                                        '02_time_discretization',
-                                       'ref_LWE.h5'),
+                                       'reference', 'ref_LWE.h5'),
         'description': 'general rate model, resolved particle',
     },
 }

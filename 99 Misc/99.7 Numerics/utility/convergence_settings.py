@@ -48,6 +48,11 @@ import utility.setting_Col1D_langLRM_2comp_benchmark1 as langmuir  # noqa: E402
 
 DIRECTORY = os.path.join('data', '01_spatial_discretization',
                          'convergence')
+
+# Converged solutions the studies are measured against. Kept in the
+# repository, unlike everything the notebooks simulate themselves.
+REFERENCE_DIRECTORY = os.path.join('data', '01_spatial_discretization',
+                                   'reference')
 TIMEOUT = 10800.0
 
 
@@ -193,6 +198,8 @@ def polynomial_degree(method):
 
 def simulate(study, polydeg, n_elements, abstol, tag, directory=DIRECTORY):
     """Run one level and return its outlet and the time CADET took."""
+    # Git carries no empty folders, so a fresh clone has none.
+    os.makedirs(directory, exist_ok=True)
     model = Cadet()
     model.root = study['build'](polydeg, n_elements, abstol)
     model.filename = os.path.join(directory, tag + '.h5')
@@ -221,7 +228,7 @@ def read_reference(study):
     """
     import h5py
 
-    path = os.path.join(DIRECTORY, study['reference_file'])
+    path = os.path.join(REFERENCE_DIRECTORY, study['reference_file'])
     if not os.path.exists(path):
         return None, None
 

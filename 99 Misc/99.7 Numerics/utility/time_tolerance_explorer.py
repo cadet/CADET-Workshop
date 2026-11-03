@@ -51,6 +51,8 @@ def make_explorer(output_directory=Path('data'), polynomial_degree=3, n_elements
     CADET must be configured before calling this function.
     """
     output_directory = Path(output_directory)
+    # Git carries no empty folders, so a fresh clone has none.
+    output_directory.mkdir(parents=True, exist_ok=True)
     times = case.solution_times()
     discretization = _discretization_label(polynomial_degree, n_elements)
     prefix = f'langLRM_1comp_pulse_P{polynomial_degree}_N{n_elements}'
