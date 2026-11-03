@@ -43,18 +43,32 @@ import utility.cadet_runtime as cadet_runtime  # noqa: E402
 import utility.convergence as convergence  # noqa: E402
 import utility.setting_Col1D_SMA_4comp_LWE_benchmark1 as lwe  # noqa: E402
 
-# Spatial method (0 = FV with WENO3, otherwise the DG polynomial degree) mapped
-# to the axial and particle resolutions offered for it. FV needs many cells to
-# get anywhere while DG is accurate on a handful of elements, so the two differ
-# by more than an order of magnitude. Each range runs a little past the point
-# where refining stops paying off, so that the saturation is visible.
-GRID_GRM = {
-    0: ((4, 8, 16, 32, 64, 128, 256), (1, 2, 4, 8, 16)),
-    1: ((4, 8, 16, 32, 64), (1, 2, 4, 8, 16)),
-    2: ((4, 8, 16, 32), (1, 2, 4, 8, 16)),
-    3: ((4, 8, 16, 32), (1, 2, 4, 8)),
-    4: ((4, 8, 16, 32), (1, 2, 4, 8)),
-    5: ((4, 8, 16, 32), (1, 2, 4, 8)),
+# The bulk and the particle are separate spatial domains and CADET
+# discretizes them separately, so the study offers a method for each. 0 is
+# finite volumes (WENO3 in the bulk), anything else is the DG polynomial
+# degree.
+#
+# The two grids below are crossed: every bulk method and resolution is
+# combined with every particle method and resolution. FV needs many cells to
+# get anywhere while DG is accurate on a handful, so the ranges differ by more
+# than an order of magnitude, and each runs a little past the point where
+# refining stops paying off so that the saturation is visible.
+AXIAL_GRID = {
+    0: (8, 16, 32, 64),
+    1: (4, 8, 16),
+    2: (4, 8, 16),
+    3: (4, 8, 16),
+    4: (4, 8, 16),
+    5: (4, 8, 16),
+}
+
+PARTICLE_GRID = {
+    0: (1, 2, 4, 8),
+    1: (1, 2, 4),
+    2: (1, 2, 4),
+    3: (1, 2, 4),
+    4: (1, 2, 4),
+    5: (1, 2, 4),
 }
 
 # Each level is simulated here and deleted again; only the summary
@@ -68,7 +82,8 @@ TIMEOUT = 7200.0
 STUDIES = {
     'grm': {
         'particle_type': 'GENERAL_RATE_PARTICLE',
-        'grid': GRID_GRM,
+        'axial_grid': AXIAL_GRID,
+        'particle_grid': PARTICLE_GRID,
         'directory': os.path.join('data', '01_spatial_discretization',
                                   'lwe_discretization'),
         'reference_file': os.path.join('data',
@@ -84,30 +99,38 @@ def method_label(spatial_method):
     return 'FV' if spatial_method == 0 else f'DG{spatial_method}'
 
 
-def case_key(spatial_method, n_axial, n_particle, lumped_particle=False):
+def case_key(bulk_method, particle_method, n_axial, n_particle,
+             lumped_particle=False):
     """Name under which one setting is stored in the result file."""
     if lumped_particle:
-        return f'{method_label(spatial_method)}_ax{n_axial}'
+        return f'{method_label(bulk_method)}_ax{n_axial}'
 
-    return f'{method_label(spatial_method)}_ax{n_axial}_par{n_particle}'
+    return (f'{method_label(bulk_method)}-{method_label(particle_method)}'
+            f'_ax{n_axial}_par{n_particle}')
 
 
-def spatial_dofs(spatial_method, n_axial, n_particle, lumped_particle=False):
-    """Number of spatial discretization points per component."""
-    nodes = 1 if spatial_method == 0 else spatial_method + 1
+def spatial_dofs(bulk_method, particle_method, n_axial, n_particle,
+                 lumped_particle=False):
+    """Number of spatial discretization points per component.
+
+    The bulk contributes its own nodes per axial element, and each of those
+    carries a particle discretized with the particle method's nodes.
+    """
+    bulk_nodes = 1 if bulk_method == 0 else bulk_method + 1
+    particle_nodes = 1 if particle_method == 0 else particle_method + 1
     if lumped_particle:
-        return 2 * nodes * n_axial
+        return 2 * bulk_nodes * n_axial
 
-    return nodes * n_axial * (1 + nodes * n_particle)
+    return bulk_nodes * n_axial * (1 + particle_nodes * n_particle)
 
 
-def simulate(spatial_method, n_axial, n_particle, work_directory,
-             particle_type='GENERAL_RATE_PARTICLE'):
+def simulate(bulk_method, particle_method, n_axial, n_particle,
+             work_directory, particle_type='GENERAL_RATE_PARTICLE'):
     """Run one setting and return its outlet, times and simulation time."""
     model = Cadet()
     model.root = lwe.get_model(
-        spatial_method_bulk=spatial_method,
-        spatial_method_particle=spatial_method,
+        spatial_method_bulk=bulk_method,
+        spatial_method_particle=particle_method,
         particle_type=particle_type,
         axNElem=n_axial,
         parZ=n_particle,
@@ -115,13 +138,15 @@ def simulate(spatial_method, n_axial, n_particle, work_directory,
         idas_reltol=RELTOL,
     )
     model.filename = os.path.join(
-        work_directory, case_key(spatial_method, n_axial, n_particle) + '.h5')
+        work_directory,
+        case_key(bulk_method, particle_method, n_axial, n_particle) + '.h5')
     model.save()
 
     run_info = model.run_simulation(timeout=TIMEOUT)
     if run_info.return_code != 0:
         raise RuntimeError(
-            f'{case_key(spatial_method, n_axial, n_particle)} failed: {run_info}')
+            f'{case_key(bulk_method, particle_method, n_axial, n_particle)}'
+            f' failed: {run_info}')
 
     times = np.asarray(convergence.get_solution_times(model.filename))
     outlet = np.asarray(convergence.get_outlet(model.filename, unit='000'))
@@ -150,7 +175,9 @@ def store(directory, runs, solutions):
     frame = pd.DataFrame(runs)
     if frame.empty:
         raise ValueError('Refusing to write an empty runs table.')
-    frame = frame.sort_values(['spatial_method', 'n_axial', 'n_particle'])
+    frame = frame.sort_values(['spatial_method_bulk',
+                               'spatial_method_particle',
+                               'n_axial', 'n_particle'])
     frame.to_csv(os.path.join(directory, 'runs.csv'), index=False)
     np.savez_compressed(os.path.join(directory, 'solutions.npz'), **solutions)
 
@@ -185,9 +212,12 @@ def run_study(name, study, force=False):
     reference_salt = np.max(abs(reference[:, 0]))
     reference_components = np.max(abs(reference[:, 1:]))
 
-    cases = [(method, n_axial, n_particle)
-             for method, (axial, particle) in study['grid'].items()
+    cases = [(bulk_method, particle_method, n_axial, n_particle)
+             for bulk_method, axial in study['axial_grid'].items()
+             for particle_method, particle in study['particle_grid'].items()
              for n_axial in axial for n_particle in particle]
+    # Cheapest first, so that an interrupted run leaves the useful coarse end
+    # of every combination in place.
     cases.sort(key=lambda case: spatial_dofs(*case, lumped_particle=lumped))
 
     # Keep the store and the grid in step: a setting that has been taken off
@@ -212,30 +242,38 @@ def run_study(name, study, force=False):
 
     failed = []
     start = time.time()
-    for number, (method, n_axial, n_particle) in enumerate(todo, 1):
-        label = f'{method_label(method):>4} {n_axial:>4} axial'
+    for number, (bulk_method, particle_method,
+                 n_axial, n_particle) in enumerate(todo, 1):
+        label = (f'{method_label(bulk_method):>4} bulk'
+                 f' / {method_label(particle_method):>4} particle'
+                 f' {n_axial:>4} axial')
         label += '' if lumped else f' {n_particle:>3} particle'
         try:
             os.makedirs(WORK_DIRECTORY, exist_ok=True)
             times, outlet, simulation_time = simulate(
-                method, n_axial, n_particle, WORK_DIRECTORY,
-                study['particle_type'])
+                bulk_method, particle_method, n_axial, n_particle,
+                WORK_DIRECTORY, study['particle_type'])
         except Exception as error:                            # noqa: BLE001
-            failed.append((method, n_axial, n_particle, str(error)[:200]))
+            failed.append((bulk_method, particle_method, n_axial, n_particle,
+                           str(error)[:200]))
             print(f'[{number}/{len(todo)}] {label}   FAILED: {str(error)[:120]}',
                   flush=True)
             continue
 
-        key = case_key(method, n_axial, n_particle, lumped)
+        key = case_key(bulk_method, particle_method, n_axial, n_particle,
+                       lumped)
         solutions[key] = outlet
         solutions['times'] = times
         runs.append({
             'key': key,
-            'method': method_label(method),
-            'spatial_method': method,
+            'method_bulk': method_label(bulk_method),
+            'method_particle': method_label(particle_method),
+            'spatial_method_bulk': bulk_method,
+            'spatial_method_particle': particle_method,
             'n_axial': n_axial,
             'n_particle': n_particle,
-            'dofs': spatial_dofs(method, n_axial, n_particle, lumped),
+            'dofs': spatial_dofs(bulk_method, particle_method, n_axial,
+                                 n_particle, lumped),
             'particle_type': study['particle_type'],
             'simulation_time': simulation_time,
             'error_salt': float(
@@ -257,9 +295,10 @@ def run_study(name, study, force=False):
     size = os.path.getsize(os.path.join(directory, 'solutions.npz')) / 1024 ** 2
     print(f'\n{len(runs)} settings stored in {directory} ({size:.1f} MB of'
           f' outlets) in {(time.time() - start) / 60:.0f} min.')
-    for method, n_axial, n_particle, message in failed:
-        print(f'  FAILED {method_label(method)} {n_axial} axial'
-              f' {n_particle} particle: {message}')
+    for bulk_method, particle_method, n_axial, n_particle, message in failed:
+        print(f'  FAILED {method_label(bulk_method)} bulk /'
+              f' {method_label(particle_method)} particle,'
+              f' {n_axial} axial {n_particle} particle: {message}')
 
     return failed
 

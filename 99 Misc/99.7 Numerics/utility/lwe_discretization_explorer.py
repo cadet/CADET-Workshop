@@ -1,8 +1,11 @@
 """Interactive discretization study for the SMA load-wash-elute benchmark.
 
 The explorer compares the outlet of the four component LWE example of
-``setting_Col1D_SMA_4comp_LWE_benchmark1`` against the stored reference, for a
-chosen spatial method, axial resolution and particle resolution.
+``setting_Col1D_SMA_4comp_LWE_benchmark1`` against the stored reference. The
+bulk and the particle are separate spatial domains, so there are four knobs: a
+spatial method and a resolution for each. Choosing finite volumes in one and
+discontinuous Galerkin in the other is allowed, and is the point of the
+study.
 
 Simulating a setting costs seconds to minutes, which is far too slow to explore
 with a slider, so every setting is simulated once by
@@ -46,43 +49,69 @@ COMPONENT_NAMES = ('Salt', 'Component 1', 'Component 2', 'Component 3')
 
 STORED, RERUN = 'Load stored result', 'Rerun simulation'
 
-# One colour and marker per spatial method for the accuracy against cost plot:
-# squares for the finite volumes, circles for the DG degrees. Orange is left
-# out of the methods because it marks whichever setting is selected.
-METHOD_STYLE = {
-    0: ('#9467bd', 's'),
-    1: ('#1f77b4', 'o'),
-    2: ('#2ca02c', 'o'),
-    3: ('#d62728', 'o'),
-    4: ('#8c564b', 'o'),
-    5: ('#17becf', 'o'),
+# The accuracy against cost plot carries one line per (bulk, particle)
+# combination, so the two domains are told apart by different channels: the
+# bulk method picks the colour, the particle method picks the marker. Orange
+# is left out of the colours because it marks whichever setting is selected.
+METHOD_COLOR = {
+    0: '#9467bd',
+    1: '#1f77b4',
+    2: '#2ca02c',
+    3: '#d62728',
+    4: '#8c564b',
+    5: '#17becf',
 }
+METHOD_MARKER = {0: 's', 1: 'o', 2: '^', 3: 'D', 4: 'v', 5: 'P'}
+
+
+def method_style(bulk_method, particle_method):
+    """Colour from the bulk method, marker from the particle method."""
+    return (METHOD_COLOR.get(bulk_method, '#7f7f7f'),
+            METHOD_MARKER.get(particle_method, 'o'))
+
+
 CURRENT_COLOR = '#ff7f0e'
 
 
-def spatial_dofs(spatial_method, n_axial, n_particle=1, lumped_particle=False):
+def spatial_dofs(bulk_method, particle_method, n_axial, n_particle=1,
+                 lumped_particle=False):
     """Number of spatial discretization points per component.
 
-    ``spatial_method`` is 0 for finite volumes and the polynomial degree for DG.
-    A lumped particle (LRMP) holds one concentration per axial point instead of
-    a resolved profile, so it is not discretized and ``n_particle`` is ignored.
-    """
-    nodes = 1 if spatial_method == 0 else spatial_method + 1
-    if lumped_particle:
-        return 2 * nodes * n_axial
+    A method is 0 for finite volumes and the polynomial degree for DG. The
+    bulk contributes its nodes per axial element, and every one of those
+    carries a particle discretized with the particle method's nodes.
 
-    return nodes * n_axial * (1 + nodes * n_particle)
+    A lumped particle (LRMP) holds one concentration per axial point instead
+    of a resolved profile, so it is not discretized and the particle
+    arguments are ignored.
+    """
+    bulk_nodes = 1 if bulk_method == 0 else bulk_method + 1
+    particle_nodes = 1 if particle_method == 0 else particle_method + 1
+    if lumped_particle:
+        return 2 * bulk_nodes * n_axial
+
+    return bulk_nodes * n_axial * (1 + particle_nodes * n_particle)
 
 
 def method_label(spatial_method):
     return 'FV' if spatial_method == 0 else f'DG{spatial_method}'
 
 
+def pair_label(bulk_method, particle_method, lumped_particle=False):
+    """How a combination reads: bulk method over particle method."""
+    if lumped_particle:
+        return method_label(bulk_method)
+
+    return (f'{method_label(bulk_method)} / '
+            f'{method_label(particle_method)}')
+
+
 @dataclass
 class DiscretizationResult:
     """Outlet of one discretization, with its errors and simulation time."""
 
-    spatial_method: int
+    bulk_method: int
+    particle_method: int
     n_axial: int
     n_particle: int
     times: np.ndarray
@@ -95,12 +124,14 @@ class DiscretizationResult:
 
     @property
     def dofs(self):
-        return spatial_dofs(self.spatial_method, self.n_axial, self.n_particle,
+        return spatial_dofs(self.bulk_method, self.particle_method,
+                            self.n_axial, self.n_particle,
                             self.lumped_particle)
 
     @property
     def label(self):
-        return method_label(self.spatial_method)
+        return pair_label(self.bulk_method, self.particle_method,
+                          self.lumped_particle)
 
     @property
     def resolution(self):
@@ -144,29 +175,43 @@ class StoredResults:
         """The time integration tolerances the stored runs were computed with."""
         return float(self.runs.abstol.iloc[0]), float(self.runs.reltol.iloc[0])
 
-    def resolutions(self):
-        """``{spatial method: (axial counts, particle counts)}`` that are stored."""
-        offered = {}
-        for method, group in self.runs.groupby('spatial_method', sort=True):
-            offered[int(method)] = (
-                tuple(sorted(group.n_axial.unique())),
-                tuple(sorted(group.n_particle.unique())),
-            )
+    def bulk_methods(self):
+        """Bulk spatial methods the store holds, in order."""
+        return tuple(sorted(int(value) for value
+                            in self.runs.spatial_method_bulk.unique()))
 
-        return offered
+    def particle_methods(self):
+        """Particle spatial methods the store holds, in order."""
+        return tuple(sorted(int(value) for value
+                            in self.runs.spatial_method_particle.unique()))
 
-    def get(self, spatial_method, n_axial, n_particle):
+    def axial_counts(self, bulk_method):
+        """Axial resolutions stored for one bulk method."""
+        group = self.runs[self.runs.spatial_method_bulk == bulk_method]
+
+        return tuple(sorted(int(value) for value in group.n_axial.unique()))
+
+    def particle_counts(self, particle_method):
+        """Particle resolutions stored for one particle method."""
+        group = self.runs[self.runs.spatial_method_particle == particle_method]
+
+        return tuple(sorted(int(value) for value in group.n_particle.unique()))
+
+    def get(self, bulk_method, particle_method, n_axial, n_particle):
         """The stored result of one setting, or None if it was not computed."""
-        matching = self.runs[(self.runs.spatial_method == spatial_method)
-                             & (self.runs.n_axial == n_axial)
-                             & (self.runs.n_particle == n_particle)]
+        matching = self.runs[
+            (self.runs.spatial_method_bulk == bulk_method)
+            & (self.runs.spatial_method_particle == particle_method)
+            & (self.runs.n_axial == n_axial)
+            & (self.runs.n_particle == n_particle)]
         if matching.empty:
             return None
 
         run = matching.iloc[0]
 
         return DiscretizationResult(
-            spatial_method=spatial_method,
+            bulk_method=bulk_method,
+            particle_method=particle_method,
             n_axial=n_axial,
             n_particle=n_particle,
             times=self.times,
@@ -191,9 +236,9 @@ def read_reference(reference_file=DEFAULT_REFERENCE):
         return np.asarray(file['output/solution/unit_000/SOLUTION_OUTLET'][()])
 
 
-def run_case(spatial_method, n_axial, n_particle=1, reference=None,
-             output_directory=RERUN_DIRECTORY, idas_abstol=1e-12, idas_reltol=1e-10,
-             lumped_particle=False):
+def run_case(bulk_method, particle_method, n_axial, n_particle=1,
+             reference=None, output_directory=RERUN_DIRECTORY,
+             idas_abstol=1e-12, idas_reltol=1e-10, lumped_particle=False):
     """Simulate one discretization and measure its outlet error.
 
     ``reference`` is the reference outlet array; the errors are relative to its
@@ -201,8 +246,9 @@ def run_case(spatial_method, n_axial, n_particle=1, reference=None,
     With ``lumped_particle`` the column is an LRMP, whose particle holds a
     single concentration and therefore takes no resolution.
     """
-    if spatial_method < 0 or n_axial < 1 or n_particle < 1:
-        raise ValueError('Resolutions must be positive and the method non-negative.')
+    if min(bulk_method, particle_method) < 0 or n_axial < 1 or n_particle < 1:
+        raise ValueError('Resolutions must be positive and the methods '
+                         'non-negative.')
     if reference is None:
         raise ValueError('A reference outlet is needed to measure the error.')
 
@@ -210,8 +256,8 @@ def run_case(spatial_method, n_axial, n_particle=1, reference=None,
                      else 'GENERAL_RATE_PARTICLE')
     model = Cadet()
     model.root = lwe.get_model(
-        spatial_method_bulk=spatial_method,
-        spatial_method_particle=spatial_method,
+        spatial_method_bulk=bulk_method,
+        spatial_method_particle=particle_method,
         particle_type=particle_type,
         axNElem=n_axial,
         parZ=n_particle,
@@ -223,8 +269,8 @@ def run_case(spatial_method, n_axial, n_particle=1, reference=None,
     Path(output_directory).mkdir(parents=True, exist_ok=True)
     model.filename = str(
         Path(output_directory)
-        / f'lwe_{particle_type[:4].lower()}_{method_label(spatial_method)}'
-          f'_ax{n_axial}{tag}.h5'
+        / f'lwe_{particle_type[:4].lower()}_{method_label(bulk_method)}'
+          f'-{method_label(particle_method)}_ax{n_axial}{tag}.h5'
     )
     model.save()
     run_info = model.run_simulation()
@@ -237,7 +283,8 @@ def run_case(spatial_method, n_axial, n_particle=1, reference=None,
         raise ValueError('Solution and reference are sampled differently.')
 
     return DiscretizationResult(
-        spatial_method=spatial_method,
+        bulk_method=bulk_method,
+        particle_method=particle_method,
         n_axial=n_axial,
         n_particle=n_particle,
         times=times,
@@ -255,29 +302,32 @@ def run_case(spatial_method, n_axial, n_particle=1, reference=None,
 def plot_performance(history, current_key=None, ax=None):
     """Error against compute time for every setting visited so far.
 
-    ``history`` maps ``(spatial method, axial cells, particle cells)`` to the
-    result shown for it. One dashed line per spatial method, ordered by compute
-    time, so that each method traces out what refining it buys. The setting on
-    the sliders right now is marked on top of its line.
+    ``history`` maps ``(bulk method, particle method, axial cells, particle
+    cells)`` to the result shown for it. One dashed line per combination of
+    methods, ordered by compute time, so that each traces out what refining it
+    buys. The bulk method sets the colour and the particle method the marker,
+    so a line that changes only one domain is easy to find. The setting on the
+    sliders right now is marked on top of its line.
     """
     if ax is None:
         _, ax = plt.subplots(figsize=(6, 6))
 
-    by_method = {}
-    for (method, _, _), result in history.items():
-        by_method.setdefault(method, []).append(result)
+    by_pair = {}
+    for (bulk, particle, _, _), result in history.items():
+        by_pair.setdefault((bulk, particle), []).append(result)
 
-    for method in sorted(by_method):
-        color, marker = METHOD_STYLE.get(method, ('#7f7f7f', 'o'))
-        points = sorted(by_method[method], key=lambda result: result.simulation_time)
+    for pair in sorted(by_pair):
+        color, marker = method_style(*pair)
+        points = sorted(by_pair[pair],
+                        key=lambda result: result.simulation_time)
         ax.plot([point.simulation_time for point in points],
                 [point.error_components * 100 for point in points],
                 linestyle='--', linewidth=1.8, color=color,
-                marker=marker, markersize=8, label=method_label(method))
+                marker=marker, markersize=8, label=pair_label(*pair))
 
     if current_key in history:
         current = history[current_key]
-        _, marker = METHOD_STYLE.get(current.spatial_method, ('#7f7f7f', 'o'))
+        _, marker = method_style(current.bulk_method, current.particle_method)
         ax.plot(current.simulation_time, current.error_components * 100,
                 linestyle='none', marker=marker, markersize=12,
                 color=CURRENT_COLOR, zorder=5, label='Current')
@@ -287,8 +337,9 @@ def plot_performance(history, current_key=None, ax=None):
     ax.set_xlabel('Compute time in seconds')
     ax.set_ylabel(r'Rel. $L^\infty$ error in %')
     ax.grid(True, which='major', alpha=0.4)
-    if by_method:
-        ax.legend(fontsize=9, loc='best')
+    if by_pair:
+        ax.legend(fontsize=8, loc='best', ncol=2 if len(by_pair) > 6 else 1,
+                  title='bulk / particle', title_fontsize=8)
 
     return ax
 
@@ -324,8 +375,10 @@ def plot_case(result, reference=None, stored_time=None, history=None,
         performance_ax = None
 
     if performance_ax is not None:
-        key = (result.spatial_method, result.n_axial, result.n_particle)
-        plot_performance(dict(history or {key: result}), key, ax=performance_ax)
+        key = (result.bulk_method, result.particle_method,
+               result.n_axial, result.n_particle)
+        plot_performance(dict(history or {key: result}), key,
+                         ax=performance_ax)
         performance_ax.set_title('Accuracy against cost (component error)',
                                  fontsize=12)
 
@@ -342,23 +395,31 @@ def plot_case(result, reference=None, stored_time=None, history=None,
 
 def lwe_discretization_explorer(
         store=DEFAULT_STORE, reference_file=DEFAULT_REFERENCE,
-        output_directory=RERUN_DIRECTORY, default_method=0, show_reference=True):
+        output_directory=RERUN_DIRECTORY, default_method=0,
+        show_reference=True):
     """Slider explorer over the stored discretization study.
+
+    The bulk and the particle are discretized separately, so each gets its own
+    method slider and its own resolution slider. Mixing the two families is
+    allowed: finite volumes in the bulk with DG in the particle, or the other
+    way round.
 
     It starts in ``Load stored result`` mode, where moving a slider shows the
     precomputed outlet immediately. Switching to ``Rerun simulation`` adds a
     button that runs the selected setting through CADET, at the tolerances the
     stored runs used, and reports the time it took on this machine.
 
-    It opens on the coarsest resolution of ``default_method``, and drops back
-    to the coarsest one whenever the method changes, so that every method is
-    met at the cheap end of its range and refined deliberately from there.
+    It opens on the coarsest resolution of ``default_method`` in both domains,
+    and a resolution drops back to the coarsest whenever its own method
+    changes, so that every method is met at the cheap end of its range and
+    refined deliberately from there.
 
     The working directory must be the one holding the stored results and the
     reference. CADET only has to be configured for the rerun mode.
     """
     results = store if isinstance(store, StoredResults) else StoredResults(store)
-    resolutions = results.resolutions()
+    bulk_methods = results.bulk_methods()
+    particle_methods = results.particle_methods()
     abstol, reltol = results.tolerances
     lumped = results.lumped_particle
     # A study of a lumped particle carries its own reference, because an LRMP
@@ -370,10 +431,13 @@ def lwe_discretization_explorer(
     # that the accuracy against cost plot fills up as the sliders are explored.
     history = {}
 
-    if default_method not in resolutions:
-        raise ValueError('The default method is not among the stored methods.')
-    coarsest_axial, coarsest_particle = (counts[0] for counts
-                                         in resolutions[default_method])
+    if default_method not in bulk_methods:
+        raise ValueError('The default method is not among the stored bulk '
+                         'methods.')
+    default_particle_method = (default_method if default_method
+                               in particle_methods else particle_methods[0])
+    coarsest_axial = results.axial_counts(default_method)[0]
+    coarsest_particle = results.particle_counts(default_particle_method)[0]
 
     plot_output = widgets.Output()
     status = widgets.HTML()
@@ -383,16 +447,26 @@ def lwe_discretization_explorer(
         tooltips=['Show the result that was computed beforehand',
                   'Run the selected setting through CADET now'],
     )
-    method_slider = widgets.SelectionSlider(
-        options=[(method_label(method), method) for method in resolutions],
-        value=default_method, description='Method', continuous_update=False,
+    bulk_method_slider = widgets.SelectionSlider(
+        options=[(method_label(method), method) for method in bulk_methods],
+        value=default_method, description='Bulk method',
+        continuous_update=False,
     )
     axial_slider = widgets.SelectionSlider(
-        options=list(resolutions[default_method][0]), value=coarsest_axial,
-        description='Axial cells', continuous_update=False,
+        options=list(results.axial_counts(default_method)),
+        value=coarsest_axial, description='Axial cells',
+        continuous_update=False,
+    )
+    particle_method_slider = widgets.SelectionSlider(
+        options=[(method_label(method), method)
+                 for method in particle_methods],
+        value=default_particle_method, description='Particle method',
+        continuous_update=False,
+        layout=widgets.Layout(display='none' if lumped else None),
     )
     particle_slider = widgets.SelectionSlider(
-        options=list(resolutions[default_method][1]), value=coarsest_particle,
+        options=list(results.particle_counts(default_particle_method)),
+        value=coarsest_particle,
         description='Particle cells', continuous_update=False,
         layout=widgets.Layout(display='none' if lumped else None),
     )
@@ -407,10 +481,12 @@ def lwe_discretization_explorer(
     )
 
     def current_key():
-        return (method_slider.value, axial_slider.value, particle_slider.value)
+        return (bulk_method_slider.value, particle_method_slider.value,
+                axial_slider.value, particle_slider.value)
 
     def draw(result, stored_time=None):
-        key = (result.spatial_method, result.n_axial, result.n_particle)
+        key = (result.bulk_method, result.particle_method,
+               result.n_axial, result.n_particle)
         history[key] = result
         with plot_output:
             plot_output.clear_output(wait=True)
@@ -422,9 +498,9 @@ def lwe_discretization_explorer(
     def show(change=None):
         """Show what the current mode has for the current setting."""
         key = current_key()
-        resolution = (f'{key[1]} axial cells' if lumped else
-                      f'{key[1]} axial and {key[2]} particle cells')
-        caption = (f'{method_label(key[0])}, {resolution}:'
+        resolution = (f'{key[2]} axial cells' if lumped else
+                      f'{key[2]} axial and {key[3]} particle cells')
+        caption = (f'{pair_label(key[0], key[1], lumped)}, {resolution}:'
                    f' {spatial_dofs(*key, lumped_particle=lumped)}'
                    ' points per component')
         stored = results.get(*key)
@@ -453,20 +529,28 @@ def lwe_discretization_explorer(
         run_button.layout.display = 'none' if change['new'] == STORED else None
         show()
 
-    def on_method(change):
-        """Offer the resolutions stored for the method, starting at its coarsest.
+    def _reset(slider, counts):
+        """Offer `counts` on `slider`, starting at the coarsest, once."""
+        slider.unobserve(show, names='value')
+        slider.options = list(counts)
+        slider.value = counts[0]
+        slider.observe(show, names='value')
 
-        Methods differ by more than an order of magnitude in how much they need,
-        so carrying a resolution over would land on a setting that is needlessly
-        fine for one method and far too coarse for another.
+    def on_bulk_method(change):
+        """Offer the axial resolutions stored for the new bulk method.
+
+        Methods differ by more than an order of magnitude in how much they
+        need, so carrying a resolution over would land on a setting that is
+        needlessly fine for one method and far too coarse for another. Only
+        the domain whose method changed is reset; the other one stays put, so
+        that one domain can be varied against a fixed other.
         """
-        axial_counts, particle_counts = resolutions[change['new']]
-        for slider, counts in ((axial_slider, axial_counts),
-                               (particle_slider, particle_counts)):
-            slider.unobserve(show, names='value')
-            slider.options = list(counts)
-            slider.value = counts[0]
-            slider.observe(show, names='value')
+        _reset(axial_slider, results.axial_counts(change['new']))
+        show()
+
+    def on_particle_method(change):
+        """The same for the particle domain."""
+        _reset(particle_slider, results.particle_counts(change['new']))
         show()
 
     def on_run(button=None):
@@ -474,8 +558,9 @@ def lwe_discretization_explorer(
         if key not in measured:
             run_button.disabled = True
             status.value = (
-                f'Simulating {method_label(key[0])} with {key[1]} axial cells'
-                + ('' if lumped else f' and {key[2]} particle cells')
+                f'Simulating {pair_label(key[0], key[1], lumped)} with'
+                f' {key[2]} axial cells'
+                + ('' if lumped else f' and {key[3]} particle cells')
                 + ' &hellip;')
             try:
                 measured[key] = run_case(
@@ -492,7 +577,8 @@ def lwe_discretization_explorer(
         show()
 
     mode_buttons.observe(on_mode, names='value')
-    method_slider.observe(on_method, names='value')
+    bulk_method_slider.observe(on_bulk_method, names='value')
+    particle_method_slider.observe(on_particle_method, names='value')
     for slider in (axial_slider, particle_slider):
         slider.observe(show, names='value')
     run_button.on_click(on_run)
@@ -503,7 +589,8 @@ def lwe_discretization_explorer(
     return widgets.VBox([
         mode_buttons,
         widgets.HBox([
-            widgets.VBox([method_slider, axial_slider, particle_slider]),
+            widgets.VBox([bulk_method_slider, axial_slider,
+                          particle_method_slider, particle_slider]),
             widgets.VBox([run_button, clear_button]),
         ]),
         status,
