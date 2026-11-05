@@ -73,7 +73,11 @@ CASES = (
      dict(is_kinetic=True, kinetics_factor=KINETICS_FACTOR)),
 )
 
-WORK = os.path.join('data', '02b_stiffness', 'sweeps', 'animation')
+# The simulations behind the videos. The videos themselves are
+# rendered rarely, committed, and read back by the notebook, so
+# they stay in data/.
+WORK = os.path.join('generated', '02b_stiffness', 'sweeps',
+                    'animation')
 VIDEO = os.path.join('data', '02b_stiffness', 'column_pulse.webm')
 
 

@@ -37,7 +37,8 @@ DATA = os.path.join('data', 'user_stories',
                     'cost_case_study_lrmp_vs_lrm')
 RUNS_CSV = os.path.join(DATA, 'runs.csv')
 CURVES_CSV = os.path.join(DATA, 'chromatograms.csv')
-WORK = os.path.join(DATA, 'sweeps', 'gmres')
+WORK = os.path.join('generated', 'user_stories',
+                    'cost_case_study_lrmp_vs_lrm', 'sweeps', 'gmres')
 
 # Machine epsilon in double precision. A residual norm cannot be reduced much
 # below this fraction of the norm of the terms that cancel in it, no matter how

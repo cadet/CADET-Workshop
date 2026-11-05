@@ -48,6 +48,17 @@ import utility.setting_Col1D_langLRM_2comp_benchmark1 as langmuir  # noqa: E402
 
 DIRECTORY = os.path.join('data', '01_spatial_discretization',
                          'convergence')
+
+# Converged solutions the studies are measured against. Kept in the
+# repository, unlike everything the notebooks simulate themselves.
+REFERENCE_DIRECTORY = os.path.join('data', '01_spatial_discretization',
+                                   'reference')
+
+# Runs made to re-check a published level. They are scratch, so they
+# are written beside the other generated output and not into the
+# published directory they are checking.
+WORK_DIRECTORY = os.path.join('generated', '01_spatial_discretization',
+                              'convergence')
 TIMEOUT = 10800.0
 
 
@@ -191,8 +202,11 @@ def polynomial_degree(method):
     return 0 if method == 'FVWENO3' else int(method.rsplit('P', 1)[1])
 
 
-def simulate(study, polydeg, n_elements, abstol, tag, directory=DIRECTORY):
+def simulate(study, polydeg, n_elements, abstol, tag,
+             directory=WORK_DIRECTORY):
     """Run one level and return its outlet and the time CADET took."""
+    # Git carries no empty folders, so a fresh clone has none.
+    os.makedirs(directory, exist_ok=True)
     model = Cadet()
     model.root = study['build'](polydeg, n_elements, abstol)
     model.filename = os.path.join(directory, tag + '.h5')
@@ -221,7 +235,7 @@ def read_reference(study):
     """
     import h5py
 
-    path = os.path.join(DIRECTORY, study['reference_file'])
+    path = os.path.join(REFERENCE_DIRECTORY, study['reference_file'])
     if not os.path.exists(path):
         return None, None
 

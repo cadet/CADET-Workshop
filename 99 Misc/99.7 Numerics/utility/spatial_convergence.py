@@ -85,6 +85,7 @@ def run_refinement_study(reference, axial_cell_counts, methods, output_directory
                 idas_reftol=1e-12,
             )
             model.root.input.solver.user_solution_times = reference.times
+            Path(output_directory).mkdir(parents=True, exist_ok=True)
             model.filename = str(Path(output_directory) / f'lin1comp_{method_name}_{n_cells}.h5')
             model.save()
             run_info = model.run_simulation()

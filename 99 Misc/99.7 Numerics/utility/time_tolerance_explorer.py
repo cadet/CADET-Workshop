@@ -44,13 +44,16 @@ def run_simulation(filename, polynomial_degree, n_elements, reltol, abstol):
     return outlet, runtime
 
 
-def make_explorer(output_directory=Path('data'), polynomial_degree=3, n_elements=32,
+def make_explorer(output_directory=Path('generated'),
+                  polynomial_degree=3, n_elements=32,
                   reltol=1e-2, abstol=1e-4):
     """Build the RELTOL/ABSTOL slider widget on a fixed spatial discretization.
 
     CADET must be configured before calling this function.
     """
     output_directory = Path(output_directory)
+    # Git carries no empty folders, so a fresh clone has none.
+    output_directory.mkdir(parents=True, exist_ok=True)
     times = case.solution_times()
     discretization = _discretization_label(polynomial_degree, n_elements)
     prefix = f'langLRM_1comp_pulse_P{polynomial_degree}_N{n_elements}'

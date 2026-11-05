@@ -3,6 +3,8 @@ __pycache__/
 .pytest_cache/
 .ipynb_checkpoints
 *.h5
+!99 Misc/99.7 Numerics/data/**/*.h5
+99 Misc/99.7 Numerics/generated/
 log/
 diskcache_*
 results_*

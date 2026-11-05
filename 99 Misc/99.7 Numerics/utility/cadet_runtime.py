@@ -10,21 +10,16 @@ Call configure() at the top of a notebook, before building any model:
     cadet_runtime.configure()
 
 The path is taken from the CADET_PATH environment variable if it is set, and
-otherwise from DEFAULT_EXECUTABLE below. Participants running these notebooks
-on their own machine set CADET_PATH, or edit the default.
+otherwise from the current Python environment (the selected notebook kernel).
+Set CADET_PATH to use a custom build instead.
 
 """
 
 import os
+import sys
 import warnings
 
 from cadet import Cadet
-
-DEFAULT_EXECUTABLE = (
-    r"C:\Users\jmbr\Desktop\CADET_compiled"
-    r"\master8_post6a5withConsInitFixAndCSTRparInterface_b580377"
-    r"\aRELEASE\bin\cadet-cli.exe"
-)
 
 
 def executable():
@@ -37,15 +32,20 @@ def executable():
     Raises
     ------
     FileNotFoundError
-        If neither CADET_PATH nor the default points at an existing file.
+        If the selected executable does not exist or is not a file.
     """
-    path = os.environ.get('CADET_PATH', DEFAULT_EXECUTABLE)
+    if 'CADET_PATH' in os.environ:
+        path = os.environ['CADET_PATH']
+    elif os.name == 'nt':
+        path = os.path.join(sys.prefix, 'Library', 'bin', 'cadet-cli.exe')
+    else:
+        path = os.path.join(sys.prefix, 'bin', 'cadet-cli')
 
-    if not os.path.exists(path):
+    if not os.path.isfile(path):
         raise FileNotFoundError(
-            "No CADET executable at '" + str(path) + "'. Set the CADET_PATH "
-            "environment variable, or edit DEFAULT_EXECUTABLE in "
-            "utility/cadet_runtime.py."
+            "No CADET executable at '" + str(path) + "'. Install CADET in "
+            "the current Python environment (" + sys.prefix + "), or set "
+            "the CADET_PATH environment variable to the executable."
         )
 
     return path
