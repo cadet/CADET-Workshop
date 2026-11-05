@@ -172,6 +172,25 @@ def reference_nodes(dispersion, total_nodes):
     return min(wanted, REFERENCE_NODES_CAP)
 
 
+def stored_reference_outlet(filename, times):
+    """The outlet stored in `filename`, or None if absent or unusable.
+
+    `model.save()` writes the input file before CADET runs, so a run that
+    failed or was interrupted leaves a file without results. Such a file
+    must read as "no cached reference", not as an error.
+    """
+    if not Path(filename).exists():
+        return None
+    try:
+        outlet = np.asarray(
+            convergence.get_outlet(str(filename), unit='001')).reshape(-1)
+    except (KeyError, ValueError, OSError):
+        return None
+    if outlet.shape != np.shape(times) or not np.all(np.isfinite(outlet)):
+        return None
+    return outlet
+
+
 def reference_outlet(times, dispersion, mode='pulse', total_nodes=96,
                      output_directory=RERUN_DIRECTORY, verbose=True):
     """The curve the methods are judged against, at the dispersion in use.
@@ -209,7 +228,9 @@ def reference_outlet(times, dispersion, mode='pulse', total_nodes=96,
     filename = Path(output_directory) / (
         f'reference_{mode}_N{nodes}_D{dispersion:.6e}.h5')
 
-    if not filename.exists():
+    outlet = stored_reference_outlet(filename, times)
+    if outlet is None:
+        filename.unlink(missing_ok=True)
         model = Cadet()
         model.root = transport.get_model(
             polynomial_degree=0,
@@ -228,12 +249,12 @@ def reference_outlet(times, dispersion, mode='pulse', total_nodes=96,
         model.save()
         run_info = model.run_simulation()
         if run_info.return_code != 0:
+            filename.unlink(missing_ok=True)
             raise RuntimeError(f'Reference simulation failed: {run_info}')
-
-    outlet = np.asarray(
-        convergence.get_outlet(str(filename), unit='001')).reshape(-1)
-    if outlet.shape != times.shape or not np.all(np.isfinite(outlet)):
-        raise ValueError('Invalid reference outlet.')
+        outlet = stored_reference_outlet(filename, times)
+        if outlet is None:
+            filename.unlink(missing_ok=True)
+            raise ValueError('Invalid reference outlet.')
 
     if verbose:
         print(f'Reference: FV WENO{REFERENCE_WENO_ORDER} on {nodes} cells, '
